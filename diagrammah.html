@@ -464,7 +464,6 @@
                     e.preventDefault(); // Prevent text selection
                     state.draggingSignalId = signal.id;
                     document.body.style.cursor = 'grabbing';
-                    render(); // Re-render to apply opacity
                 });
 
                 const nameSpan = document.createElement('span');
