@@ -282,6 +282,7 @@
             nextSignalId: 2,
             nextTimeId: 2,
             draggingTimeId: null,
+            draggingSignalId: null,
             contextTarget: null,
             isColorMode: true,
             diagramTitle: 'Untitled Diagram',
@@ -449,9 +450,22 @@
 
                 // Render Signal Name
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700 cursor-pointer';
+                nameDiv.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700';
                 nameDiv.style.height = `${signalHeight}px`;
+                nameDiv.style.cursor = 'grab';
                 nameDiv.dataset.signalId = signal.id;
+
+                if (state.draggingSignalId === signal.id) {
+                    nameDiv.style.opacity = '0.5';
+                }
+
+                nameDiv.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return; // Only drag with left mouse button
+                    e.preventDefault(); // Prevent text selection
+                    state.draggingSignalId = signal.id;
+                    document.body.style.cursor = 'grabbing';
+                    render(); // Re-render to apply opacity
+                });
 
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'font-semibold truncate';
@@ -1286,7 +1300,22 @@
         // --- DRAGGING LOGIC ---
         
         window.addEventListener('mousemove', (e) => {
-            if (state.draggingTimeId) {
+            if (state.draggingSignalId) {
+                const signalHeight = DENSITY_HEIGHTS[state.densityMode];
+                const rect = signalNamesContainer.getBoundingClientRect();
+                const y = e.clientY - rect.top - SIGNALS_START_Y;
+
+                let newIndex = Math.floor(y / signalHeight);
+                newIndex = Math.max(0, Math.min(state.signals.length - 1, newIndex));
+
+                const oldIndex = state.signals.findIndex(s => s.id === state.draggingSignalId);
+
+                if (oldIndex !== -1 && newIndex !== oldIndex) {
+                    const [draggedSignal] = state.signals.splice(oldIndex, 1);
+                    state.signals.splice(newIndex, 0, draggedSignal);
+                    render();
+                }
+            } else if (state.draggingTimeId) {
                 const division = state.timeDivisions.find(t => t.id === state.draggingTimeId);
                 if (division) {
                     const CTM = svg.getScreenCTM();
@@ -1304,6 +1333,11 @@
         });
 
         window.addEventListener('mouseup', () => {
+            if (state.draggingSignalId) {
+                state.draggingSignalId = null;
+                document.body.style.cursor = 'default';
+                render();
+            }
             state.draggingTimeId = null;
         });
         
