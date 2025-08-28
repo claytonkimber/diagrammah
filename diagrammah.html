@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timing Diagram Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@2.10.1/dist/dom-to-image-more.min.js"></script>
+    <style>
+        /* Embedded Google Fonts to fix CORS issue with dom-to-image */
+        /* latin-ext */
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 400;
+          font-display: swap;
+          src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa2JL7SUc.woff2) format('woff2');
+          unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        /* latin */
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 400;
+          font-display: swap;
+          src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1JL7.woff2) format('woff2');
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        /* latin-ext */
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 500;
+          font-display: swap;
+          src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa2JL7SUc.woff2) format('woff2');
+          unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        /* latin */
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 500;
+          font-display: swap;
+          src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1JL7.woff2) format('woff2');
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        /* latin-ext */
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 600;
+          font-display: swap;
+          src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa2JL7SUc.woff2) format('woff2');
+          unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        /* latin */
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 600;
+          font-display: swap;
+          src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1JL7.woff2) format('woff2');
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        /* latin-ext */
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 700;
+          font-display: swap;
+          src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa2JL7SUc.woff2) format('woff2');
+          unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        /* latin */
+        @font-face {
+          font-family: 'Inter';
+          font-style: normal;
+          font-weight: 700;
+          font-display: swap;
+          src: url(https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1JL7.woff2) format('woff2');
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+        .context-menu {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background-color: #2d3748; /* gray-800 */
+            border: 1px solid #4a5568; /* gray-600 */
+            border-radius: 0.375rem; /* rounded-md */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            min-width: 150px;
+        }
+        .context-menu-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: white;
+            font-size: 0.875rem;
+        }
+        .context-menu-item:hover {
+            background-color: #4a5568; /* gray-600 */
+        }
+        .context-menu-separator {
+            border-top: 1px solid #4a5568; /* gray-600 */
+            margin: 0.25rem 0;
+        }
+        .context-menu input[type="color"], .context-menu input[type="text"] {
+            background-color: #1a202c; /* gray-900 */
+            border: 1px solid #4a5568; /* gray-600 */
+            border-radius: 0.25rem;
+            width: 100%;
+            padding: 0.25rem;
+            color: white;
+        }
+        /* Style for the draggable time division groups */
+        .time-division-group {
+            cursor: ew-resize;
+        }
+        .time-division-group rect {
+            transition: fill 0.2s ease-in-out;
+        }
+        .time-division-group:hover rect {
+            fill: rgba(74, 222, 128, 0.3); /* green-400 with opacity */
+        }
+    </style>
+    <style id="print-styles">
+        @media print {
+            /* Ensures colors and backgrounds print correctly */
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            /* Hide UI elements that shouldn't be printed */
+            header {
+                display: none !important;
+            }
+            /* Ensure the main content and diagram fill the page */
+            #app {
+                overflow: visible !important;
+                height: auto !important;
+                display: block !important;
+            }
+            main {
+                 overflow: visible !important;
+                 height: auto !important;
+            }
+            #canvas-container {
+                overflow: visible !important;
+                height: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                flex-grow: 1 !important;
+            }
+            svg {
+                width: 100% !important;
+                height: auto !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white overflow-hidden">
+
+    <div id="app" class="flex flex-col h-screen">
+        <!-- TOP TOOLBAR -->
+        <header class="bg-gray-800 border-b border-gray-700 p-2 flex items-center space-x-4 flex-shrink-0">
+            <h1 class="text-lg font-bold text-emerald-400">Timing Diagram Creator</h1>
+            <input id="diagram-title-input" type="text" placeholder="Untitled Diagram" class="bg-gray-700 text-white rounded-md px-2 py-1 text-sm w-64 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <button id="add-signal-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                Add Signal
+            </button>
+            <button id="add-time-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                Add Time Division
+            </button>
+            <div class="flex items-center space-x-2">
+                <button id="scale-lock-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors">
+                    <span id="scale-lock-icon">🔒</span> Scaled
+                </button>
+                <span class="text-xs text-gray-400">Drag divisions to unlock</span>
+            </div>
+             <div class="flex items-center space-x-2 ml-4">
+                <label for="density-select" class="text-sm text-gray-400">Density:</label>
+                <select id="density-select" class="bg-gray-700 text-white rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <option value="normal">Normal</option>
+                    <option value="dense">Dense</option>
+                </select>
+            </div>
+            <div class="flex-grow"></div> <!-- Spacer -->
+            <div class="flex items-center space-x-4 pr-4">
+                 <button id="export-xml-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    Export
+                </button>
+                 <button id="import-xml-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Import
+                </button>
+                <button id="color-toggle-btn" class="font-bold py-1 px-3 rounded-md text-sm transition-colors">
+                    <!-- Text/Style set by JS -->
+                </button>
+                <button id="png-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    PNG
+                </button>
+                <button id="print-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm2-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                    Print
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-grow flex flex-col overflow-hidden">
+             <h2 id="diagram-title-print" class="hidden text-center text-2xl font-bold p-4"></h2>
+            <div class="flex-grow flex overflow-hidden">
+                <!-- Signal Names Panel -->
+                <div id="signal-names" class="w-48 bg-gray-800 p-2 overflow-y-auto flex-shrink-0 border-r border-gray-700">
+                    <!-- Signal names will be injected here -->
+                </div>
+
+                <!-- Diagram Canvas -->
+                <div id="canvas-container" class="flex-grow overflow-auto bg-gray-900">
+                    <svg id="diagram-svg" width="2000" height="100%"></svg>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- CUSTOM CONTEXT MENU -->
+    <div id="context-menu" class="context-menu"></div>
+
+    <script>
+        // --- DOM ELEMENTS ---
+        const svg = document.getElementById('diagram-svg');
+        const signalNamesContainer = document.getElementById('signal-names');
+        const addSignalBtn = document.getElementById('add-signal-btn');
+        const addTimeBtn = document.getElementById('add-time-btn');
+        const scaleLockBtn = document.getElementById('scale-lock-btn');
+        const scaleLockIcon = document.getElementById('scale-lock-icon');
+        const contextMenu = document.getElementById('context-menu');
+        const canvasContainer = document.getElementById('canvas-container');
+        const colorToggleBtn = document.getElementById('color-toggle-btn');
+        const printBtn = document.getElementById('print-btn');
+        const pngBtn = document.getElementById('png-btn');
+        const bodyEl = document.body;
+        const diagramTitleInput = document.getElementById('diagram-title-input');
+        const diagramTitlePrint = document.getElementById('diagram-title-print');
+        const exportXmlBtn = document.getElementById('export-xml-btn');
+        const importXmlBtn = document.getElementById('import-xml-btn');
+        const densitySelect = document.getElementById('density-select');
+
+        // --- CONSTANTS ---
+        const DENSITY_HEIGHTS = { normal: 90, dense: 45 };
+        const NAME_PANEL_WIDTH = 192; // Corresponds to w-48 in Tailwind
+        const TIME_AXIS_Y = 30;
+        const TIME_BAR_HEIGHT = 60;
+        const SIGNALS_START_Y = TIME_AXIS_Y + TIME_BAR_HEIGHT;
+
+        // --- APPLICATION STATE ---
+        let state = {
+            signals: [{
+                id: 'sig_1',
+                name: 'Signal 1',
+                type: 'digital', // 'digital' or 'analog'
+                color: '#34d399', // emerald-400
+                lineStyle: 'solid', // 'solid', 'dashed', 'dotted', 'dash-dot'
+                nodes: [
+                    { timeId: 't_0', value: '0' },
+                    { timeId: 't_1', value: '1' },
+                ]
+            }],
+            timeDivisions: [
+                { id: 't_0', label: '0ns', x: 100 },
+                { id: 't_1', label: '100ns', x: 300 },
+            ],
+            isScaled: true,
+            nextSignalId: 2,
+            nextTimeId: 2,
+            draggingTimeId: null,
+            contextTarget: null,
+            isColorMode: true,
+            diagramTitle: 'Untitled Diagram',
+            densityMode: 'normal', // 'normal', 'dense'
+        };
+
+        // --- CORE RENDER FUNCTION ---
+        function render() {
+            // Apply color mode styles
+            bodyEl.style.backgroundColor = C('#111827', '#ffffff');
+            bodyEl.style.color = C('#ffffff', '#000000');
+            signalNamesContainer.style.backgroundColor = C('#374151', '#f3f4f6'); // gray-700 / gray-100
+            canvasContainer.style.backgroundColor = C('#1f2937', '#ffffff'); // gray-800 / white
+            
+            // Align the name panel's content with the SVG canvas's signal area by setting a top padding
+            // equal to the height of the time bar area in the SVG. This overrides the 'p-2' class's top padding.
+            signalNamesContainer.style.paddingTop = `${SIGNALS_START_Y}px`;
+            
+            // Clear previous render
+            svg.innerHTML = '';
+            signalNamesContainer.innerHTML = '';
+            
+            // Adjust SVG size
+            const svgWidth = canvasContainer.clientWidth;
+            const totalSignalHeight = state.signals.reduce((sum, sig) => sum + getSignalHeight(sig), 0);
+            const totalHeight = SIGNALS_START_Y + totalSignalHeight + 50;
+            svg.setAttribute('width', svgWidth);
+            svg.setAttribute('height', Math.max(totalHeight, canvasContainer.clientHeight));
+
+            renderTimeAxis();
+            renderSignals();
+            updateToolbar();
+        }
+
+        function renderTimeAxis() {
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arrowhead');
+            marker.setAttribute('markerWidth', '10');
+            marker.setAttribute('markerHeight', '7');
+            marker.setAttribute('refX', '0');
+            marker.setAttribute('refY', '3.5');
+            marker.setAttribute('orient', 'auto');
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+            polygon.setAttribute('fill', C('#9ca3af')); // gray-400
+            marker.appendChild(polygon);
+            defs.appendChild(marker);
+            svg.appendChild(defs);
+
+            const timeAxisLine = createSvgElement('line', {
+                x1: 50, y1: TIME_AXIS_Y, x2: svg.getAttribute('width') - 20, y2: TIME_AXIS_Y,
+                stroke: C('#9ca3af'), 'stroke-width': 1, 'marker-end': 'url(#arrowhead)'
+            });
+            svg.appendChild(timeAxisLine);
+
+             // Add a dedicated line for highlighting the hovered time division
+            const highlightLine = createSvgElement('line', {
+                id: 'highlight-line',
+                y1: TIME_AXIS_Y, 
+                y2: svg.getAttribute('height'),
+                stroke: 'rgba(52, 211, 153, 0.7)', // emerald-400 with opacity
+                'stroke-width': 3,
+                visibility: 'hidden',
+                'pointer-events': 'none'
+            });
+            svg.appendChild(highlightLine);
+            
+            // Add a label for the time bar
+            const timeLabel = createSvgElement('text', {
+                x: 25,
+                y: TIME_AXIS_Y + TIME_BAR_HEIGHT / 2 + 5,
+                fill: C('#9ca3af'),
+                'font-size': '12px',
+                'font-weight': 'bold',
+                'text-anchor': 'middle'
+            });
+            timeLabel.textContent = "Time";
+            svg.appendChild(timeLabel);
+
+            // Interactive Time Division Bar background
+            const timeBarBg = createSvgElement('rect', {
+                x: 50,
+                y: TIME_AXIS_Y,
+                width: svg.getAttribute('width') - 70,
+                height: TIME_BAR_HEIGHT,
+                fill: C('rgba(75, 85, 99, 0.2)', 'rgba(209, 213, 219, 0.3)')
+            });
+            timeBarBg.addEventListener('contextmenu', (e) => {
+                const clickX = e.offsetX;
+                showContextMenu(e, 'timebar', { clickX });
+            });
+            svg.appendChild(timeBarBg);
+
+            state.timeDivisions.forEach((div, index) => {
+                const line = createSvgElement('line', {
+                    x1: div.x, y1: TIME_AXIS_Y, x2: div.x, y2: svg.getAttribute('height'),
+                    stroke: C('#4b5563'), 'stroke-width': 1, 'stroke-dasharray': '4 4'
+                });
+                
+                // Group for each time division's interactive elements
+                const group = createSvgElement('g', {
+                    class: 'time-division-group', 'data-time-id': div.id
+                });
+                
+                const handle = createSvgElement('rect', {
+                   x: div.x - 30, y: TIME_AXIS_Y, width: 60, height: TIME_BAR_HEIGHT,
+                   fill: 'transparent'
+                });
+
+                const text = createSvgElement('text', {
+                    x: div.x, y: TIME_AXIS_Y - 10, fill: C('#d1d5db'), 'font-size': '12px', 'text-anchor': 'middle', 'pointer-events': 'none'
+                });
+                text.textContent = div.label;
+                
+                group.appendChild(handle);
+                group.appendChild(text);
+
+                group.addEventListener('dblclick', () => activateTimeLabelRename(div, group));
+                group.addEventListener('contextmenu', (e) => showContextMenu(e, 'timediv', {
+                    id: div.id, 
+                    rename: () => activateTimeLabelRename(div, group)
+                }));
+                group.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    state.draggingTimeId = div.id;
+                    state.isScaled = false;
+                    updateToolbar();
+                });
+
+                svg.appendChild(line);
+                svg.appendChild(group);
+            });
+        }
+
+        function renderSignals() {
+            let currentY = SIGNALS_START_Y;
+            const totalSvgWidth = parseFloat(svg.getAttribute('width'));
+
+            state.signals.forEach((signal, index) => {
+                const signalHeight = getSignalHeight(signal);
+                const y_base = currentY + signalHeight; // This is the bottom of the lane
+                const laneTop = currentY;
+
+                // --- Pre-calculate min/max for analog signal scaling ---
+                let analogMin = 0, analogMax = 1;
+                if (signal.type === 'analog') {
+                    const values = signal.nodes.map(n => parseFloat(n.value)).filter(v => !isNaN(v));
+                    if (values.length > 0) {
+                        analogMin = Math.min(...values);
+                        analogMax = Math.max(...values);
+                        if (analogMin === analogMax) {
+                            // Handle case where all values are the same
+                            analogMin -= 0.5;
+                            analogMax += 0.5;
+                        }
+                    }
+                }
+
+                // Pre-sort nodes once for this signal to use for both path and labels
+                const sortedNodes = signal.nodes
+                    .map(node => ({ ...node, time: state.timeDivisions.find(t => t.id === node.timeId) }))
+                    .filter(node => node.time)
+                    .sort((a, b) => a.time.x - b.time.x);
+
+                // Render Signal Name
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700 cursor-pointer';
+                nameDiv.style.height = `${signalHeight}px`;
+                nameDiv.dataset.signalId = signal.id;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'font-semibold truncate';
+                nameSpan.style.color = getSignalColor(signal);
+                nameSpan.textContent = signal.name;
+
+                const typeSpan = document.createElement('span');
+                typeSpan.className = 'text-xs ml-2 flex-shrink-0';
+                typeSpan.style.color = C('#9ca3af', '#6b7280'); // gray-400 / gray-500
+                typeSpan.textContent = signal.type;
+
+                const nameWrapper = document.createElement('div');
+                nameWrapper.className = 'flex-grow min-w-0';
+                nameWrapper.appendChild(nameSpan);
+
+                nameDiv.appendChild(nameWrapper);
+                nameDiv.appendChild(typeSpan);
+
+                const activateRename = () => {
+                    // Hide context menu if it's open
+                    hideContextMenu();
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = signal.name;
+                    input.className = 'bg-gray-900 text-white w-full border border-gray-600 rounded-sm px-1';
+                    
+                    nameWrapper.replaceChild(input, nameSpan);
+                    input.focus();
+                    input.select();
+                    
+                    const saveName = () => {
+                        signal.name = input.value || signal.name;
+                        render(); 
+                    };
+                    
+                    const handleKey = (e) => {
+                        if (e.key === 'Enter') {
+                            saveName();
+                        } else if (e.key === 'Escape') {
+                            render();
+                        }
+                    };
+
+                    input.addEventListener('blur', saveName, { once: true });
+                    input.addEventListener('keydown', handleKey);
+                };
+
+                nameDiv.addEventListener('dblclick', activateRename);
+                nameDiv.addEventListener('contextmenu', (e) => showContextMenu(e, 'signal', {id: signal.id, rename: activateRename}));
+                signalNamesContainer.appendChild(nameDiv);
+
+                // Create a transparent hitbox for the entire signal row to make right-clicking easier
+                const hitboxRect = createSvgElement('rect', {
+                    x: 50,
+                    y: laneTop,
+                    width: svg.getAttribute('width'),
+                    height: signalHeight,
+                    fill: 'transparent',
+                    cursor: 'pointer'
+                });
+
+                const highlightLine = document.getElementById('highlight-line');
+                hitboxRect.addEventListener('mousemove', (e) => {
+                    if (highlightLine) {
+                        const mouseX = e.offsetX;
+                        const { closestTimeId } = findClosestTimeDivision(mouseX);
+                        const closestDiv = state.timeDivisions.find(t => t.id === closestTimeId);
+                        if (closestDiv) {
+                            highlightLine.setAttribute('x1', closestDiv.x);
+                            highlightLine.setAttribute('x2', closestDiv.x);
+                            highlightLine.style.visibility = 'visible';
+                        }
+                    }
+                });
+                hitboxRect.addEventListener('mouseenter', () => {
+                    nameDiv.style.backgroundColor = C('rgba(75, 85, 99, 0.5)', 'rgba(209, 213, 219, 0.7)');
+                });
+                 hitboxRect.addEventListener('mouseleave', () => {
+                    if (highlightLine) {
+                        highlightLine.style.visibility = 'hidden';
+                    }
+                    nameDiv.style.backgroundColor = '';
+                });
+
+                if (signal.type === 'digital') {
+                    // For digital signals, a right-click directly toggles the value.
+                    hitboxRect.addEventListener('contextmenu', (e) => {
+                        e.preventDefault(); // Prevent the browser's context menu.
+                        const clickX = e.offsetX;
+                        const { closestTimeId } = findClosestTimeDivision(clickX);
+                        if (closestTimeId) {
+                            const node = signal.nodes.find(n => n.timeId === closestTimeId);
+                            if (node) {
+                                node.value = node.value === '1' ? '0' : '1';
+                                render();
+                            }
+                        }
+                    });
+                } else {
+                    // For analog signals, a right-click shows the context menu to input a value.
+                    hitboxRect.addEventListener('contextmenu', (e) => {
+                        const clickX = e.offsetX;
+                        const { closestTimeId, prevTimeId } = findClosestTimeDivision(clickX);
+                        showContextMenu(e, 'waveform', {signalId: signal.id, clickX, closestTimeId, prevTimeId });
+                    });
+                }
+                svg.appendChild(hitboxRect);
+
+                // Render Waveform
+                const pathData = generatePathData(signal, laneTop, signalHeight, analogMin, analogMax, sortedNodes);
+                const path = createSvgElement('path', {
+                    d: pathData,
+                    fill: 'none',
+                    stroke: getSignalColor(signal),
+                    'stroke-width': 2,
+                    'stroke-dasharray': getLineStyle(signal.lineStyle),
+                    'data-signal-id': signal.id,
+                    'pointer-events': 'none' // The hitbox rect will handle pointer events for this area
+                });
+                svg.appendChild(path);
+
+                // Render node values as text
+                sortedNodes.forEach((node, i) => {
+                    const timeDiv = node.time;
+                    if (timeDiv) {
+                        const prevNode = i > 0 ? sortedNodes[i - 1] : null;
+
+                        // Only render the label if it's the first node or the value has changed.
+                        if (!prevNode || node.value !== prevNode.value) {
+                            let textY;
+                            if (signal.type === 'digital') {
+                               const laneCenterY = laneTop + (signalHeight / 2);
+                               const digitalVisualHeight = 30; // The visual height of the 0/1 signal
+                               const y_high = laneCenterY - (digitalVisualHeight / 2);
+                               const y_low = laneCenterY + (digitalVisualHeight / 2);
+
+                               if (state.densityMode === 'dense') {
+                                    if (node.value == '1') {
+                                       textY = y_high + 12; // Place inside, below the high line
+                                    } else { // node.value is '0'
+                                       textY = y_low - 5; // Place inside, above the low line
+                                    }
+                               } else { // Normal density logic
+                                   if (node.value == '1') {
+                                       textY = y_high - 5; // Always place above for high signals
+                                   } else { // node.value is '0'
+                                       textY = y_low + 15; // Always place below for low signals
+                                   }
+                               }
+                            } else {
+                               // --- Dynamic Analog Label Placement ---
+                               const y_top = laneTop + (signalHeight * 0.1); // 10% from top of lane
+                               const y_bottom = laneTop + (signalHeight * 0.9); // 90% from top of lane
+                               const scaledY = scaleAnalogValue(parseFloat(node.value), analogMin, analogMax, y_top, y_bottom);
+                               
+                               const nextNode = i < sortedNodes.length - 1 ? sortedNodes[i + 1] : null;
+                               let placeLabelBelow = false;
+
+                               if (nextNode) {
+                                   // If the line goes up from this point, place the label below to avoid the line.
+                                   if (parseFloat(node.value) < parseFloat(nextNode.value)) {
+                                       placeLabelBelow = true;
+                                   }
+                               } else {
+                                   // For the very last node, check the trend from the previous node.
+                                   if (prevNode && parseFloat(node.value) > parseFloat(prevNode.value)) {
+                                       // If the line was rising to meet this last point, place the label below.
+                                       placeLabelBelow = true;
+                                   }
+                               }
+                               
+                               // In dense mode, reduce the offset to keep labels inside the lane
+                               const verticalOffset = state.densityMode === 'dense' ? 12 : 15;
+                               textY = scaledY + (placeLabelBelow ? verticalOffset : -5); // Position below or above
+                            }
+
+                            const text = createSvgElement('text', {
+                                x: timeDiv.x + 5, y: textY, fill: getSignalColor(signal), 'font-size': '12px'
+                            });
+                            text.textContent = node.value;
+                            svg.appendChild(text);
+                        }
+                    }
+                });
+                 currentY += signalHeight;
+            });
+        }
+
+        function updateToolbar() {
+            scaleLockBtn.className = `text-white font-bold py-1 px-3 rounded-md text-sm transition-colors ${state.isScaled ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-600 hover:bg-gray-500'}`;
+            scaleLockIcon.textContent = state.isScaled ? '🔒' : '🔓';
+            scaleLockBtn.lastChild.textContent = state.isScaled ? ' Scaled' : ' Unscaled';
+
+            // Update color toggle button
+            colorToggleBtn.className = `font-bold py-1 px-3 rounded-md text-sm transition-colors ${state.isColorMode ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-black'}`;
+            colorToggleBtn.textContent = state.isColorMode ? 'Color Mode' : 'B&W Mode';
+        }
+
+        // --- PATH & DATA HELPERS ---
+        function generatePathData(signal, laneTop, signalHeight, analogMin, analogMax, sortedNodes) {
+            let d = '';
+            if (sortedNodes.length === 0) return '';
+            
+            // Defines the vertical center and visual height for digital signals
+            const laneCenterY = laneTop + (signalHeight / 2);
+            const digitalVisualHeight = 30;
+            const y_high = laneCenterY - (digitalVisualHeight / 2);
+            const y_low = laneCenterY + (digitalVisualHeight / 2);
+
+            if (signal.type === 'digital') {
+                d = `M 50,${sortedNodes[0].value == '1' ? y_high : y_low}`;
+                sortedNodes.forEach((node, i) => {
+                    const x = node.time.x;
+                    const y = node.value == '1' ? y_high : y_low;
+                    const prevNode = i > 0 ? sortedNodes[i-1] : node;
+                    const prev_y = prevNode.value == '1' ? y_high : y_low;
+                    
+                    if (i > 0) {
+                        d += ` L ${x},${prev_y}`; // Horizontal line to transition point
+                        d += ` L ${x},${y}`; // Vertical line for transition
+                    } else {
+                        d += ` L ${x},${y}`;
+                    }
+                });
+                const lastNode = sortedNodes[sortedNodes.length-1];
+                const lastY = lastNode.value == '1' ? y_high : y_low;
+                d += ` L ${svg.getAttribute('width') - 20},${lastY}`;
+
+            } else { // Analog
+                const y_top = laneTop + (signalHeight * 0.1);
+                const y_bottom = laneTop + (signalHeight * 0.9);
+
+                const firstY = scaleAnalogValue(parseFloat(sortedNodes[0].value), analogMin, analogMax, y_top, y_bottom);
+                d = `M 50,${firstY}`;
+                
+                sortedNodes.forEach((node, i) => {
+                    const x = node.time.x;
+                    const y = scaleAnalogValue(parseFloat(node.value), analogMin, analogMax, y_top, y_bottom);
+                    d += ` L ${x},${y}`;
+                });
+
+                const lastNode = sortedNodes[sortedNodes.length-1];
+                const lastY = scaleAnalogValue(parseFloat(lastNode.value), analogMin, analogMax, y_top, y_bottom);
+                d += ` L ${svg.getAttribute('width') - 20},${lastY}`;
+            }
+            return d;
+        }
+
+        function scaleAnalogValue(value, min, max, yTop, yBottom) {
+            if (isNaN(value)) value = min;
+            const range = max - min;
+            if (range === 0) {
+                return yTop + (yBottom - yTop) / 2; // Middle of the range
+            }
+            const percentage = (value - min) / range;
+            return yBottom - (percentage * (yBottom - yTop)); // Invert for SVG y-axis
+        }
+
+        function C(colorForColorMode, colorForBwMode = '#000000') {
+            return state.isColorMode ? colorForColorMode : colorForBwMode;
+        }
+
+        function getSignalHeight(signal) {
+            return DENSITY_HEIGHTS[state.densityMode];
+        }
+
+        function getSignalColor(signal) {
+            return state.isColorMode ? signal.color : '#000000';
+        }
+
+        function getLineStyle(style) {
+            switch (style) {
+                case 'dashed': return '10 5';
+                case 'dotted': return '2 5';
+                case 'dash-dot': return '10 5 2 5';
+                default: return 'none';
+            }
+        }
+
+        function getNodeValue(signal, timeId) {
+             const sortedNodes = signal.nodes
+                .map(node => ({ ...node, time: state.timeDivisions.find(t => t.id === node.timeId) }))
+                .filter(node => node.time)
+                .sort((a, b) => a.time.x - b.time.x);
+            
+            let value = signal.type === 'digital' ? '0' : '0.0';
+            for (const node of sortedNodes) {
+                if (node.timeId === timeId) return node.value;
+                value = node.value;
+            }
+            return value;
+        }
+
+        function getPreviousNodeValue(signal, timeId) {
+            const timeDiv = state.timeDivisions.find(t => t.id === timeId);
+            if (!timeDiv) return '0';
+            
+            const sortedNodes = signal.nodes
+                .map(node => ({...node, x: state.timeDivisions.find(t=>t.id === node.timeId)?.x}))
+                .filter(node => node.x < timeDiv.x)
+                .sort((a, b) => b.x - a.x);
+            
+            return sortedNodes.length > 0 ? sortedNodes[0].value : '0';
+        }
+
+        // --- EVENT HANDLERS & ACTIONS ---
+        addSignalBtn.addEventListener('click', () => {
+            if (state.signals.length >= 100) {
+                alert("Maximum of 100 signals reached.");
+                return;
+            }
+            const newSignalId = `sig_${state.nextSignalId++}`;
+            const newSignal = {
+                id: newSignalId,
+                name: `Signal ${state.signals.length + 1}`,
+                type: 'digital',
+                color: `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`,
+                lineStyle: 'solid',
+                nodes: state.timeDivisions.map(t => ({timeId: t.id, value: '0'}))
+            };
+            state.signals.push(newSignal);
+            render();
+        });
+        
+        addTimeBtn.addEventListener('click', () => {
+            const newTimeId = `t_${state.nextTimeId++}`;
+            const lastTime = state.timeDivisions[state.timeDivisions.length - 1];
+            const newX = lastTime.x + 200;
+            const newLabel = `${parseFloat(lastTime.label) + 100}ns`;
+            
+            state.timeDivisions.push({id: newTimeId, label: newLabel, x: newX});
+            
+            // Add a default node for this time to all signals
+            state.signals.forEach(sig => {
+                const prevValue = getPreviousNodeValue(sig, newTimeId);
+                sig.nodes.push({ timeId: newTimeId, value: prevValue });
+            });
+
+            if (state.isScaled) rescaleTime();
+            render();
+        });
+
+        scaleLockBtn.addEventListener('click', () => {
+            state.isScaled = !state.isScaled;
+            if (state.isScaled) {
+                rescaleTime();
+            }
+            render();
+        });
+
+        colorToggleBtn.addEventListener('click', () => {
+            state.isColorMode = !state.isColorMode;
+            render();
+        });
+
+        printBtn.addEventListener('click', () => {
+            // A brief timeout can help ensure the browser has finished the last render
+            // especially if the user just changed to B&W mode.
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        });
+
+        pngBtn.addEventListener('click', () => {
+            const mainContent = document.querySelector('main');
+            const originalCanvasBg = canvasContainer.style.backgroundColor;
+            const originalSignalBg = signalNamesContainer.style.backgroundColor;
+
+            // Make title visible for export
+            diagramTitlePrint.classList.remove('hidden');
+            diagramTitlePrint.style.color = C('#ffffff', '#000000');
+
+            // Temporarily set backgrounds to transparent for the export
+            canvasContainer.style.backgroundColor = 'transparent';
+            signalNamesContainer.style.backgroundColor = 'transparent';
+            
+            // Ensure the SVG background itself is transparent
+            svg.style.backgroundColor = 'transparent';
+
+            domtoimage.toPng(mainContent)
+                .then(function (dataUrl) {
+                    const link = document.createElement('a');
+                    link.download = `${state.diagramTitle.replace(/ /g, '_') || 'timing-diagram'}.png`;
+                    link.href = dataUrl;
+                    link.click();
+                })
+                .catch(function (error) {
+                    console.error('PNG export failed:', error);
+                    alert('Sorry, something went wrong while exporting the PNG.');
+                })
+                .finally(function () {
+                    // Restore original styles
+                    canvasContainer.style.backgroundColor = originalCanvasBg;
+                    signalNamesContainer.style.backgroundColor = originalSignalBg;
+                    // Hide title again
+                    diagramTitlePrint.classList.add('hidden');
+                    diagramTitlePrint.style.color = '';
+                });
+        });
+
+        diagramTitleInput.addEventListener('input', (e) => {
+            state.diagramTitle = e.target.value;
+            diagramTitlePrint.textContent = state.diagramTitle;
+        });
+
+        exportXmlBtn.addEventListener('click', () => {
+            const xmlString = generateXmlFromState();
+            const blob = new Blob([xmlString], { type: 'application/xml' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${state.diagramTitle.replace(/ /g, '_') || 'timing-diagram'}.xml`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        });
+
+        importXmlBtn.addEventListener('click', () => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.xml, application/xml';
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const xmlString = event.target.result;
+                        parseXmlAndLoadState(xmlString);
+                    } catch (error) {
+                        console.error("Failed to import XML:", error);
+                        alert("The selected file could not be imported. It may be invalid or corrupted.");
+                    }
+                };
+                reader.readAsText(file);
+            };
+            fileInput.click();
+        });
+
+        densitySelect.addEventListener('change', (e) => {
+            state.densityMode = e.target.value;
+            render();
+        });
+
+        function rescaleTime() {
+            const numericDivs = state.timeDivisions
+                .map(d => ({...d, val: parseFloat(d.label)}))
+                .filter(d => !isNaN(d.val))
+                .sort((a,b) => a.val - b.val);
+
+            if (numericDivs.length < 2) return;
+            
+            const minTime = numericDivs[0].val;
+            const maxTime = numericDivs[numericDivs.length - 1].val;
+            const timeRange = maxTime - minTime;
+            const svgWidth = parseFloat(svg.getAttribute('width'));
+            const drawingArea = svgWidth - 150; // margins
+            
+            state.timeDivisions.forEach(div => {
+                const numVal = parseFloat(div.label);
+                if (!isNaN(numVal)) {
+                   div.x = 100 + ((numVal - minTime) / timeRange) * drawingArea;
+                }
+            });
+            state.timeDivisions.sort((a,b) => a.x - b.x);
+        }
+
+        // --- CONTEXT MENU LOGIC ---
+        function showContextMenu(e, type, target) {
+            e.preventDefault();
+            e.stopPropagation();
+            state.contextTarget = target;
+            contextMenu.innerHTML = ''; // Clear previous menu
+
+            if (type === 'signal') {
+                const signal = state.signals.find(s => s.id === target.id);
+                if (!signal) return;
+                contextMenu.appendChild(createMenuItem('Change Name', target.rename));
+                contextMenu.appendChild(createMenuItem(`Toggle Type (is ${signal.type})`, () => toggleSignalType(target.id)));
+                contextMenu.appendChild(createMenuSeparator());
+                contextMenu.appendChild(createColorInput(target.id, signal.color));
+                contextMenu.appendChild(createSelectInput('Line Style', target.id, signal.lineStyle, ['solid', 'dashed', 'dotted', 'dash-dot'], changeSignalLineStyle));
+                contextMenu.appendChild(createMenuSeparator());
+                contextMenu.appendChild(createMenuItem('Delete Signal', () => deleteSignal(target.id), true));
+            } else if (type === 'waveform') {
+                const { signalId, clickX } = target;
+                const signal = state.signals.find(s => s.id === signalId);
+                const { closestTimeId, prevTimeId } = findClosestTimeDivision(clickX);
+                const nodeAtClosest = signal.nodes.find(n => n.timeId === closestTimeId);
+                
+                // This menu is now only for ANALOG signals.
+                if (nodeAtClosest) {
+                    contextMenu.appendChild(createTextInput('Value at division', signalId, nodeAtClosest.timeId, nodeAtClosest.value, updateNodeValue));
+                }
+            } else if (type === 'timebar') {
+                 const { clickX } = target;
+                 const addNodeItem = document.createElement('div');
+                addNodeItem.className = 'context-menu-item';
+                addNodeItem.textContent = 'Add Time Division Here';
+                addNodeItem.onclick = (e) => {
+                    e.stopPropagation();
+                    const inputWrapper = createTextInput('New Time Label', null, clickX, `${Math.round(clickX)}px`, (id1, x, label) => {
+                        if (label) {
+                            addTimeDivision(x, label);
+                        }
+                    });
+                    contextMenu.replaceChild(inputWrapper, addNodeItem);
+                };
+                contextMenu.appendChild(addNodeItem);
+            } else if (type === 'timediv') {
+                 contextMenu.appendChild(createMenuItem('Rename Division', target.rename));
+                 contextMenu.appendChild(createMenuSeparator());
+                 contextMenu.appendChild(createMenuItem('Delete Division', () => deleteTimeDivision(target.id), true));
+            }
+
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = `${e.pageX}px`;
+            contextMenu.style.top = `${e.pageY}px`;
+        }
+        
+        function hideContextMenu() {
+            contextMenu.style.display = 'none';
+        }
+
+        // Context menu item creation helpers
+        function createMenuItem(label, action, isDestructive = false) {
+            const item = document.createElement('div');
+            item.className = 'context-menu-item';
+            if (isDestructive) item.style.color = '#f87171'; // red-400
+            item.textContent = label;
+            item.onclick = (e) => { e.stopPropagation(); action(); hideContextMenu(); };
+            return item;
+        }
+        function createMenuSeparator() {
+            const sep = document.createElement('div');
+            sep.className = 'context-menu-separator';
+            return sep;
+        }
+        function createColorInput(signalId, value) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'context-menu-item';
+            wrapper.innerHTML = `<label class="text-xs text-gray-400">Color</label>`;
+            const input = document.createElement('input');
+            input.type = 'color';
+            input.value = value;
+            input.oninput = (e) => changeSignalColor(signalId, e.target.value);
+            input.onclick = e => e.stopPropagation();
+            wrapper.appendChild(input);
+            return wrapper;
+        }
+        function createSelectInput(label, signalId, value, options, action) {
+             const wrapper = document.createElement('div');
+            wrapper.className = 'context-menu-item';
+            wrapper.innerHTML = `<label class="text-xs text-gray-400">${label}</label>`;
+            const select = document.createElement('select');
+            select.className = 'bg-gray-900 text-white w-full mt-1';
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt.charAt(0).toUpperCase() + opt.slice(1);
+                if(opt === value) option.selected = true;
+                select.appendChild(option);
+            });
+            select.onchange = (e) => action(signalId, e.target.value);
+            select.onclick = e => e.stopPropagation();
+            wrapper.appendChild(select);
+            return wrapper;
+        }
+        function createTextInput(label, id1, id2, value, action) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'context-menu-item';
+            wrapper.innerHTML = `<label class="text-xs text-gray-400">${label}</label>`;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = value;
+            
+            let actionTaken = false;
+            const performAction = () => {
+                if (actionTaken) return;
+                actionTaken = true;
+                if (input.value) { // Don't add if the label is empty
+                    action(id1, id2, input.value);
+                }
+                hideContextMenu();
+            };
+
+            input.onclick = e => e.stopPropagation();
+            input.onkeydown = e => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                    performAction();
+                } else if (e.key === 'Escape') {
+                    hideContextMenu();
+                }
+            };
+            input.onblur = performAction; // Use blur to save when focus is lost
+            
+            wrapper.appendChild(input);
+            
+            const helper = document.createElement('p');
+            helper.textContent = 'Enter to save, Esc to cancel';
+            helper.className = 'text-xs text-gray-500 mt-1';
+            wrapper.appendChild(helper);
+
+            setTimeout(() => input.focus(), 0);
+
+            return wrapper;
+        }
+
+
+        // --- Context Menu Actions ---
+        function toggleSignalType(signalId) {
+            const signal = state.signals.find(s => s.id === signalId);
+            signal.type = signal.type === 'digital' ? 'analog' : 'digital';
+            render();
+        }
+        function changeSignalColor(signalId, color) {
+            state.signals.find(s => s.id === signalId).color = color;
+            render();
+        }
+        function changeSignalLineStyle(signalId, style) {
+            state.signals.find(s => s.id === signalId).lineStyle = style;
+            render();
+        }
+        function deleteSignal(signalId) {
+            // Removed confirm() as it may not work in all environments.
+            state.signals = state.signals.filter(s => s.id !== signalId);
+            render();
+        }
+        function updateNodeValue(signalId, timeId, value) {
+            const signal = state.signals.find(s => s.id === signalId);
+            const node = signal.nodes.find(n => n.timeId === timeId);
+            if (node) {
+                node.value = value;
+                render();
+            }
+        }
+        function updateTimeLabel(timeId, _, value) { // signalId is unused but passed by creator
+            const div = state.timeDivisions.find(t => t.id === timeId);
+            if (div) {
+                div.label = value;
+                if (state.isScaled && !isNaN(parseFloat(value))) {
+                    rescaleTime();
+                }
+            }
+            render();
+        }
+
+        function addTimeDivision(xPos, timeLabel) {
+            const newTimeId = `t_${state.nextTimeId++}`;
+            
+            // Add new time division
+            state.timeDivisions.push({ id: newTimeId, label: timeLabel, x: xPos });
+            state.timeDivisions.sort((a,b) => a.x - b.x);
+
+            // Add node to all signals to maintain consistency
+            state.signals.forEach(sig => {
+                const prevValue = getPreviousNodeValue(sig, newTimeId);
+                sig.nodes.push({ timeId: newTimeId, value: prevValue });
+            });
+
+            if (state.isScaled && !isNaN(parseFloat(timeLabel))) rescaleTime();
+            else state.isScaled = false;
+            
+            render();
+        }
+
+        function activateTimeLabelRename(div, groupElement) {
+            hideContextMenu();
+            groupElement.style.visibility = 'hidden';
+
+            const bbox = groupElement.getBBox();
+            const foreignObject = createSvgElement('foreignObject', {
+                x: bbox.x,
+                y: bbox.y,
+                width: bbox.width,
+                height: bbox.height + 5
+            });
+
+            const uniqueInputId = `time-input-${div.id}`;
+            const foreignHtml = `
+                <body xmlns="http://www.w3.org/1999/xhtml">
+                    <input type="text" id="${uniqueInputId}" value="${div.label}" 
+                           style="width: 100%; height: 100%; padding: 1px; border: 1px solid #6b7280; border-radius: 2px; background-color: #1f2937; color: white; font-family: Inter, sans-serif; font-size: 12px; text-align: center;" />
+                </body>`;
+            foreignObject.innerHTML = foreignHtml;
+            svg.appendChild(foreignObject);
+
+            const liveInput = document.getElementById(uniqueInputId);
+            if (!liveInput) { render(); return; }
+
+            liveInput.focus();
+            liveInput.select();
+
+            const saveLabel = () => {
+                updateTimeLabel(div.id, null, liveInput.value);
+                // The render() in updateTimeLabel will clean up the foreignObject
+            };
+            
+            const handleKey = (e) => {
+                if (e.key === 'Enter') saveLabel();
+                else if (e.key === 'Escape') render();
+            };
+
+            liveInput.addEventListener('blur', saveLabel, { once: true });
+            liveInput.addEventListener('keydown', handleKey);
+        }
+
+        function deleteTimeDivision(timeId) {
+            if (state.timeDivisions.length <= 1) {
+                console.warn("Cannot delete the last time division.");
+                return;
+            }
+            // Removed confirm() as it may not work in all environments.
+            state.timeDivisions = state.timeDivisions.filter(t => t.id !== timeId);
+            state.signals.forEach(sig => {
+                sig.nodes = sig.nodes.filter(n => n.timeId !== timeId);
+            });
+            if (state.isScaled) rescaleTime();
+            render();
+        }
+
+
+        // --- IMPORT/EXPORT LOGIC ---
+        function generateXmlFromState() {
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+            xml += '<timingDiagram>\n';
+            xml += `    <title>${escapeXml(state.diagramTitle)}</title>\n`;
+            xml += `    <settings>\n`;
+            xml += `        <isScaled>${state.isScaled}</isScaled>\n`;
+            xml += `        <isColorMode>${state.isColorMode}</isColorMode>\n`;
+            xml += `        <densityMode>${state.densityMode}</densityMode>\n`;
+            xml += `    </settings>\n`;
+            
+            xml += '    <signals>\n';
+            state.signals.forEach(s => {
+                xml += `        <signal id="${s.id}" name="${escapeXml(s.name)}" type="${s.type}" color="${s.color}" lineStyle="${s.lineStyle}">\n`;
+                xml += `            <nodes>\n`;
+                s.nodes.forEach(n => {
+                    xml += `                <node timeId="${n.timeId}" value="${escapeXml(n.value)}" />\n`;
+                });
+                xml += `            </nodes>\n`;
+                xml += `        </signal>\n`;
+            });
+            xml += '    </signals>\n';
+
+            xml += '    <timeDivisions>\n';
+            state.timeDivisions.forEach(t => {
+                xml += `        <division id="${t.id}" label="${escapeXml(t.label)}" x="${t.x}" />\n`;
+            });
+            xml += '    </timeDivisions>\n';
+
+            xml += '</timingDiagram>';
+            return xml;
+        }
+
+        function parseXmlAndLoadState(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+            
+            if (xmlDoc.getElementsByTagName("parsererror").length) {
+                throw new Error("Invalid XML format");
+            }
+
+            const newState = {};
+
+            newState.diagramTitle = xmlDoc.querySelector("title").textContent;
+            newState.isScaled = xmlDoc.querySelector("isScaled").textContent === 'true';
+            newState.isColorMode = xmlDoc.querySelector("isColorMode").textContent === 'true';
+            newState.densityMode = xmlDoc.querySelector("densityMode")?.textContent || 'normal';
+            
+            newState.signals = [];
+            const signalElements = xmlDoc.querySelectorAll("signal");
+            signalElements.forEach(sigEl => {
+                const signal = {
+                    id: sigEl.getAttribute('id'),
+                    name: sigEl.getAttribute('name'),
+                    type: sigEl.getAttribute('type'),
+                    color: sigEl.getAttribute('color'),
+                    lineStyle: sigEl.getAttribute('lineStyle'),
+                    nodes: []
+                };
+                const nodeElements = sigEl.querySelectorAll("node");
+                nodeElements.forEach(nodeEl => {
+                    signal.nodes.push({
+                        timeId: nodeEl.getAttribute('timeId'),
+                        value: nodeEl.getAttribute('value')
+                    });
+                });
+                newState.signals.push(signal);
+            });
+
+            newState.timeDivisions = [];
+            const divElements = xmlDoc.querySelectorAll("division");
+            divElements.forEach(divEl => {
+                newState.timeDivisions.push({
+                    id: divEl.getAttribute('id'),
+                    label: divEl.getAttribute('label'),
+                    x: parseFloat(divEl.getAttribute('x'))
+                });
+            });
+
+            // Restore state and re-render
+            state.diagramTitle = newState.diagramTitle;
+            state.isColorMode = newState.isColorMode;
+            state.isScaled = newState.isScaled;
+            state.densityMode = newState.densityMode;
+            state.signals = newState.signals;
+            state.timeDivisions = newState.timeDivisions;
+
+            // Recalculate next IDs to avoid conflicts
+            const maxSignalId = Math.max(0, ...state.signals.map(s => parseInt(s.id.split('_')[1])));
+            const maxTimeId = Math.max(0, ...state.timeDivisions.map(t => parseInt(t.id.split('_')[1])));
+            state.nextSignalId = maxSignalId + 1;
+            state.nextTimeId = maxTimeId + 1;
+
+            diagramTitleInput.value = state.diagramTitle;
+            densitySelect.value = state.densityMode;
+            render();
+        }
+
+        function escapeXml(str) {
+            return str.replace(/[<>&'"]/g, function (c) {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+
+        // --- DRAGGING LOGIC ---
+        
+        window.addEventListener('mousemove', (e) => {
+            if (state.draggingTimeId) {
+                const division = state.timeDivisions.find(t => t.id === state.draggingTimeId);
+                if (division) {
+                    const CTM = svg.getScreenCTM();
+                    const newX = (e.clientX - CTM.e) / CTM.a;
+                    const svgWidth = canvasContainer.clientWidth;
+                    // Constrain dragging within the visible SVG area with a margin
+                    division.x = Math.max(50, Math.min(newX, svgWidth - 50));
+                    
+                    // Re-sort divisions by position
+                    state.timeDivisions.sort((a, b) => a.x - b.x);
+                    
+                    render();
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            state.draggingTimeId = null;
+        });
+        
+        // --- UTILITY FUNCTIONS ---
+        function createSvgElement(tag, attributes) {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (const key in attributes) {
+                el.setAttribute(key, attributes[key]);
+            }
+            return el;
+        }
+
+        function findClosestTimeDivision(x) {
+            if (state.timeDivisions.length === 0) return { closestTimeId: null, prevTimeId: null };
+            const sorted = [...state.timeDivisions].sort((a,b) => a.x - b.x);
+            let closest = sorted[0];
+            let minDiff = Math.abs(x - closest.x);
+            for (let i = 1; i < sorted.length; i++) {
+                let diff = Math.abs(x - sorted[i].x);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closest = sorted[i];
+                }
+            }
+            
+            const prevDivs = sorted.filter(t => t.x < x);
+            const prev = prevDivs.length > 0 ? prevDivs[prevDivs.length - 1] : null;
+
+            return { closestTimeId: closest.id, prevTimeId: prev ? prev.id : null };
+        }
+
+        // --- GLOBAL LISTENERS ---
+        window.addEventListener('click', hideContextMenu);
+        window.addEventListener('resize', render);
+
+        // --- INITIAL RENDER ---
+        diagramTitleInput.value = state.diagramTitle;
+        diagramTitlePrint.textContent = state.diagramTitle;
+        densitySelect.value = state.densityMode;
+        render();
+
+    </script>
+</body>
+</html>
+```
+
