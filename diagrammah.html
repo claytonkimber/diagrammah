@@ -219,7 +219,7 @@
              <h2 id="diagram-title-print" class="hidden text-center text-2xl font-bold p-4"></h2>
             <div class="flex-grow flex overflow-hidden">
                 <!-- Signal Names Panel -->
-                <div id="signal-names" class="w-48 bg-gray-800 p-2 overflow-y-auto flex-shrink-0 border-r border-gray-700">
+                <div id="signal-names" class="w-60 bg-gray-800 flex flex-col flex-shrink-0 border-r border-gray-700">
                     <!-- Signal names will be injected here -->
                 </div>
 
@@ -256,9 +256,10 @@
 
         // --- CONSTANTS ---
         const DENSITY_HEIGHTS = { normal: 90, dense: 45 };
-        const NAME_PANEL_WIDTH = 192; // Corresponds to w-48 in Tailwind
+        const NAME_PANEL_WIDTH = 240; // Corresponds to w-60 in Tailwind
         const TIME_AXIS_Y = 30;
-        const TIME_BAR_HEIGHT = 60;
+        const TIME_BAR_HEIGHT = 40;
+        const SIGNAL_BAR_WIDTH = 40;
         const SIGNALS_START_Y = TIME_AXIS_Y + TIME_BAR_HEIGHT;
 
         // --- APPLICATION STATE ---
@@ -282,6 +283,7 @@
             nextSignalId: 2,
             nextTimeId: 2,
             draggingTimeId: null,
+            draggingSignalId: null,
             contextTarget: null,
             isColorMode: true,
             diagramTitle: 'Untitled Diagram',
@@ -296,10 +298,6 @@
             signalNamesContainer.style.backgroundColor = C('#374151', '#f3f4f6'); // gray-700 / gray-100
             canvasContainer.style.backgroundColor = C('#1f2937', '#ffffff'); // gray-800 / white
             
-            // Align the name panel's content with the SVG canvas's signal area by setting a top padding
-            // equal to the height of the time bar area in the SVG. This overrides the 'p-2' class's top padding.
-            signalNamesContainer.style.paddingTop = `${SIGNALS_START_Y}px`;
-            
             // Clear previous render
             svg.innerHTML = '';
             signalNamesContainer.innerHTML = '';
@@ -311,8 +309,23 @@
             svg.setAttribute('width', svgWidth);
             svg.setAttribute('height', Math.max(totalHeight, canvasContainer.clientHeight));
 
+            // Create Signal Header
+            const signalHeader = document.createElement('div');
+            signalHeader.style.height = `${SIGNALS_START_Y}px`;
+            signalHeader.className = 'flex items-center justify-center border-b border-gray-700 flex-shrink-0';
+            const signalLabel = document.createElement('div');
+            signalLabel.textContent = 'Signal';
+            signalLabel.className = 'font-bold text-sm';
+            signalLabel.style.color = C('#9ca3af');
+            signalHeader.appendChild(signalLabel);
+            signalNamesContainer.appendChild(signalHeader);
+
+            const signalListContainer = document.createElement('div');
+            signalListContainer.className = 'overflow-y-auto flex-grow';
+            signalNamesContainer.appendChild(signalListContainer);
+
             renderTimeAxis();
-            renderSignals();
+            renderSignals(signalListContainer);
             updateToolbar();
         }
 
@@ -410,6 +423,7 @@
                     state.draggingTimeId = div.id;
                     state.isScaled = false;
                     updateToolbar();
+                    document.body.style.userSelect = 'none';
                 });
 
                 svg.appendChild(line);
@@ -417,7 +431,7 @@
             });
         }
 
-        function renderSignals() {
+        function renderSignals(container) {
             let currentY = SIGNALS_START_Y;
             const totalSvgWidth = parseFloat(svg.getAttribute('width'));
 
@@ -449,9 +463,30 @@
 
                 // Render Signal Name
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700 cursor-pointer';
+                nameDiv.className = 'flex items-center justify-between rounded-md';
+                if (state.draggingSignalId === signal.id) {
+                    nameDiv.style.backgroundColor = C('rgba(75, 85, 99, 0.5)', 'rgba(209, 213, 219, 0.7)');
+                }
                 nameDiv.style.height = `${signalHeight}px`;
                 nameDiv.dataset.signalId = signal.id;
+
+                const handle = document.createElement('div');
+                handle.className = 'flex-shrink-0 flex items-center justify-center rounded-l-md';
+                handle.style.width = `${SIGNAL_BAR_WIDTH}px`;
+                handle.style.height = '100%';
+                handle.style.cursor = 'ns-resize';
+                handle.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;"><g><circle cx="9" cy="6" r="1.5" fill="${C('#9ca3af')}"/><circle cx="15" cy="6" r="1.5" fill="${C('#9ca3af')}"/><circle cx="9" cy="12" r="1.5" fill="${C('#9ca3af')}"/><circle cx="15" cy="12" r="1.5" fill="${C('#9ca3af')}"/><circle cx="9" cy="18" r="1.5" fill="${C('#9ca3af')}"/><circle cx="15" cy="18" r="1.5" fill="${C('#9ca3af')}"/></g></svg>`;
+
+                handle.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    state.draggingSignalId = signal.id;
+                    document.body.style.userSelect = 'none';
+                });
+                handle.addEventListener('mouseenter', () => { handle.style.backgroundColor = 'rgba(74, 222, 128, 0.3)'; });
+                handle.addEventListener('mouseleave', () => { handle.style.backgroundColor = 'transparent'; });
+
+                const nameContentWrapper = document.createElement('div');
+                nameContentWrapper.className = 'flex-grow min-w-0 flex items-center justify-between p-2 cursor-pointer';
 
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'font-semibold truncate';
@@ -467,11 +502,12 @@
                 nameWrapper.className = 'flex-grow min-w-0';
                 nameWrapper.appendChild(nameSpan);
 
-                nameDiv.appendChild(nameWrapper);
-                nameDiv.appendChild(typeSpan);
+                nameDiv.appendChild(handle);
+                nameContentWrapper.appendChild(nameWrapper)
+                nameContentWrapper.appendChild(typeSpan);
+                nameDiv.appendChild(nameContentWrapper);
 
                 const activateRename = () => {
-                    // Hide context menu if it's open
                     hideContextMenu();
                     const input = document.createElement('input');
                     input.type = 'text';
@@ -499,9 +535,9 @@
                     input.addEventListener('keydown', handleKey);
                 };
 
-                nameDiv.addEventListener('dblclick', activateRename);
-                nameDiv.addEventListener('contextmenu', (e) => showContextMenu(e, 'signal', {id: signal.id, rename: activateRename}));
-                signalNamesContainer.appendChild(nameDiv);
+                nameContentWrapper.addEventListener('dblclick', activateRename);
+                nameContentWrapper.addEventListener('contextmenu', (e) => showContextMenu(e, 'signal', {id: signal.id, rename: activateRename}));
+                container.appendChild(nameDiv);
 
                 // Create a transparent hitbox for the entire signal row to make right-clicking easier
                 const hitboxRect = createSvgElement('rect', {
@@ -1301,10 +1337,38 @@
                     render();
                 }
             }
+            if (state.draggingSignalId) {
+                const draggedId = state.draggingSignalId;
+                const signalsContainer = document.querySelector('#signal-names > div:last-child');
+                if (!signalsContainer) return;
+
+                const signalElements = Array.from(signalsContainer.children);
+                const targetElement = signalElements.find(child => {
+                    const rect = child.getBoundingClientRect();
+                    return e.clientY >= rect.top && e.clientY <= rect.bottom;
+                });
+
+                if (targetElement) {
+                    const targetId = targetElement.dataset.signalId;
+                    if (targetId && targetId !== draggedId) {
+                        const signals = state.signals;
+                        const draggedIndex = signals.findIndex(s => s.id === draggedId);
+                        const targetIndex = signals.findIndex(s => s.id === targetId);
+
+                        if (draggedIndex !== -1 && targetIndex !== -1) {
+                            const [draggedItem] = signals.splice(draggedIndex, 1);
+                            signals.splice(targetIndex, 0, draggedItem);
+                            render();
+                        }
+                    }
+                }
+            }
         });
 
         window.addEventListener('mouseup', () => {
             state.draggingTimeId = null;
+            state.draggingSignalId = null;
+            document.body.style.userSelect = '';
         });
         
         // --- UTILITY FUNCTIONS ---
