@@ -126,6 +126,16 @@
         .time-division-group:hover rect {
             fill: rgba(74, 222, 128, 0.3); /* green-400 with opacity */
         }
+        /* Style for the draggable signal division groups */
+        .signal-division-group {
+            cursor: ns-resize;
+        }
+        .signal-division-group rect {
+            transition: fill 0.2s ease-in-out;
+        }
+        .signal-division-group:hover rect {
+            fill: rgba(59, 130, 246, 0.3); /* blue-500 with opacity */
+        }
         .noselect {
             -webkit-touch-callout: none; /* iOS Safari */
             -webkit-user-select: none;   /* Safari */
@@ -266,7 +276,10 @@
         const DENSITY_HEIGHTS = { normal: 90, dense: 45 };
         const NAME_PANEL_WIDTH = 192; // Corresponds to w-48 in Tailwind
         const TIME_AXIS_Y = 30;
-        const TIME_BAR_HEIGHT = 60;
+        const TIME_BAR_HEIGHT = 30; // User request: make this smaller
+        const SIGNAL_AXIS_X = 10;
+        const SIGNAL_BAR_WIDTH = 30; // User request: make this same size as time bar
+        const WAVEFORM_START_X = SIGNAL_AXIS_X + SIGNAL_BAR_WIDTH;
         const SIGNALS_START_Y = TIME_AXIS_Y + TIME_BAR_HEIGHT;
 
         // --- APPLICATION STATE ---
@@ -283,8 +296,8 @@
                 ]
             }],
             timeDivisions: [
-                { id: 't_0', label: '0ns', x: 100 },
-                { id: 't_1', label: '100ns', x: 300 },
+                { id: 't_0', label: '0ns', x: 100 + SIGNAL_BAR_WIDTH },
+                { id: 't_1', label: '100ns', x: 300 + SIGNAL_BAR_WIDTH },
             ],
             isScaled: true,
             nextSignalId: 2,
@@ -322,8 +335,23 @@
             svg.setAttribute('height', Math.max(totalHeight, canvasContainer.clientHeight));
 
             renderTimeAxis();
+            renderSignalAxis();
             renderSignals();
             updateToolbar();
+        }
+
+        function renderSignalAxis() {
+            const totalSignalHeight = state.signals.reduce((sum, sig) => sum + getSignalHeight(sig), 0);
+
+            // Signal Bar background
+            const signalBarBg = createSvgElement('rect', {
+                x: SIGNAL_AXIS_X,
+                y: SIGNALS_START_Y,
+                width: SIGNAL_BAR_WIDTH,
+                height: totalSignalHeight,
+                fill: C('rgba(75, 85, 99, 0.2)', 'rgba(209, 213, 219, 0.3)')
+            });
+            svg.appendChild(signalBarBg);
         }
 
         function renderTimeAxis() {
@@ -343,7 +371,7 @@
             svg.appendChild(defs);
 
             const timeAxisLine = createSvgElement('line', {
-                x1: 50, y1: TIME_AXIS_Y, x2: svg.getAttribute('width') - 20, y2: TIME_AXIS_Y,
+                x1: WAVEFORM_START_X, y1: TIME_AXIS_Y, x2: svg.getAttribute('width') - 20, y2: TIME_AXIS_Y,
                 stroke: C('#9ca3af'), 'stroke-width': 1, 'marker-end': 'url(#arrowhead)'
             });
             svg.appendChild(timeAxisLine);
@@ -360,23 +388,11 @@
             });
             svg.appendChild(highlightLine);
             
-            // Add a label for the time bar
-            const timeLabel = createSvgElement('text', {
-                x: 25,
-                y: TIME_AXIS_Y + TIME_BAR_HEIGHT / 2 + 5,
-                fill: C('#9ca3af'),
-                'font-size': '12px',
-                'font-weight': 'bold',
-                'text-anchor': 'middle'
-            });
-            timeLabel.textContent = "Time";
-            svg.appendChild(timeLabel);
-
             // Interactive Time Division Bar background
             const timeBarBg = createSvgElement('rect', {
-                x: 50,
+                x: WAVEFORM_START_X,
                 y: TIME_AXIS_Y,
-                width: svg.getAttribute('width') - 70,
+                width: svg.getAttribute('width') - WAVEFORM_START_X - 20,
                 height: TIME_BAR_HEIGHT,
                 fill: C('rgba(75, 85, 99, 0.2)', 'rgba(209, 213, 219, 0.3)')
             });
@@ -416,8 +432,14 @@
                     rename: () => activateTimeLabelRename(div, group)
                 }));
                 group.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return;
                     e.stopPropagation();
-                    state.draggingTimeId = div.id;
+                    state.potentialDragTarget = {
+                        type: 'time',
+                        id: div.id,
+                        startX: e.clientX,
+                        startY: e.clientY
+                    };
                     state.isScaled = false;
                     updateToolbar();
                 });
@@ -459,23 +481,14 @@
 
                 // Render Signal Name
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700';
+                nameDiv.className = 'flex items-center justify-between p-2 rounded-md';
                 nameDiv.style.height = `${signalHeight}px`;
-                nameDiv.style.cursor = 'grab';
                 nameDiv.dataset.signalId = signal.id;
 
                 if (state.draggingSignalId === signal.id) {
+                    nameDiv.style.backgroundColor = C('rgba(75, 85, 99, 0.5)', 'rgba(209, 213, 219, 0.7)');
                     nameDiv.style.opacity = '0.5';
                 }
-
-                nameDiv.addEventListener('mousedown', (e) => {
-                    if (e.button !== 0) return; // Only drag with left mouse button
-                    state.potentialDragTarget = {
-                        id: signal.id,
-                        startX: e.clientX,
-                        startY: e.clientY
-                    };
-                });
 
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'font-semibold truncate';
@@ -527,11 +540,38 @@
                 nameDiv.addEventListener('contextmenu', (e) => showContextMenu(e, 'signal', {id: signal.id, rename: activateRename}));
                 signalNamesContainer.appendChild(nameDiv);
 
+                // Create a draggable handle in the signal bar area
+                const signalDragGroup = createSvgElement('g', {
+                    class: 'signal-division-group',
+                    'data-signal-id': signal.id
+                });
+                const dragHandle = createSvgElement('rect', {
+                    x: SIGNAL_AXIS_X,
+                    y: laneTop,
+                    width: SIGNAL_BAR_WIDTH,
+                    height: signalHeight,
+                    fill: 'transparent'
+                });
+                signalDragGroup.appendChild(dragHandle);
+
+                signalDragGroup.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return;
+                    e.stopPropagation();
+                    state.potentialDragTarget = {
+                        type: 'signal',
+                        id: signal.id,
+                        startX: e.clientX,
+                        startY: e.clientY
+                    };
+                });
+                svg.appendChild(signalDragGroup);
+
+
                 // Create a transparent hitbox for the entire signal row to make right-clicking easier
                 const hitboxRect = createSvgElement('rect', {
-                    x: 50,
+                    x: WAVEFORM_START_X,
                     y: laneTop,
-                    width: svg.getAttribute('width'),
+                    width: svg.getAttribute('width') - WAVEFORM_START_X,
                     height: signalHeight,
                     fill: 'transparent',
                     cursor: 'pointer'
@@ -686,7 +726,7 @@
             const y_low = laneCenterY + (digitalVisualHeight / 2);
 
             if (signal.type === 'digital') {
-                d = `M 50,${sortedNodes[0].value == '1' ? y_high : y_low}`;
+                d = `M ${WAVEFORM_START_X},${sortedNodes[0].value == '1' ? y_high : y_low}`;
                 sortedNodes.forEach((node, i) => {
                     const x = node.time.x;
                     const y = node.value == '1' ? y_high : y_low;
@@ -709,7 +749,7 @@
                 const y_bottom = laneTop + (signalHeight * 0.9);
 
                 const firstY = scaleAnalogValue(parseFloat(sortedNodes[0].value), analogMin, analogMax, y_top, y_bottom);
-                d = `M 50,${firstY}`;
+                d = `M ${WAVEFORM_START_X},${firstY}`;
                 
                 sortedNodes.forEach((node, i) => {
                     const x = node.time.x;
@@ -966,19 +1006,19 @@
                 const timeRange = maxTime - minTime;
 
                 const svgWidth = parseFloat(svg.getAttribute('width'));
-                const drawingArea = svgWidth - 150; // margins
+                const drawingArea = svgWidth - WAVEFORM_START_X - 20; // margins
 
                 if (timeRange === 0) {
                     // If all time values are identical, distribute them evenly.
                     const divisionWidth = state.timeDivisions.length > 1 ? drawingArea / (state.timeDivisions.length - 1) : 0;
                     state.timeDivisions.forEach((div, index) => {
-                        div.x = 100 + index * divisionWidth;
+                        div.x = WAVEFORM_START_X + index * divisionWidth;
                     });
                 } else {
                     // Scale based on the parsed time value.
                     state.timeDivisions.forEach(div => {
                         const parsed = parsedDivs.find(p => p.id === div.id);
-                        div.x = 100 + ((parsed.timeVal - minTime) / timeRange) * drawingArea;
+                        div.x = WAVEFORM_START_X + ((parsed.timeVal - minTime) / timeRange) * drawingArea;
                     });
                 }
             } else {
@@ -994,12 +1034,12 @@
                 const maxTime = numericDivs[numericDivs.length - 1].val;
                 const timeRange = maxTime - minTime;
                 const svgWidth = parseFloat(svg.getAttribute('width'));
-                const drawingArea = svgWidth - 150; // margins
+                const drawingArea = svgWidth - WAVEFORM_START_X - 20; // margins
 
                 state.timeDivisions.forEach(div => {
                     const numVal = parseFloat(div.label);
                     if (!isNaN(numVal)) {
-                       div.x = 100 + ((numVal - minTime) / timeRange) * drawingArea;
+                       div.x = WAVEFORM_START_X + ((numVal - minTime) / timeRange) * drawingArea;
                     }
                 });
             }
@@ -1376,18 +1416,26 @@
         // --- DRAGGING LOGIC ---
         
         window.addEventListener('mousemove', (e) => {
-            if (state.potentialDragTarget && !state.draggingSignalId) {
+            // --- Drag Initiation ---
+            if (state.potentialDragTarget && !state.draggingSignalId && !state.draggingTimeId) {
                 const dx = e.clientX - state.potentialDragTarget.startX;
                 const dy = e.clientY - state.potentialDragTarget.startY;
                 if (Math.sqrt(dx * dx + dy * dy) > 5) { // Drag threshold
-                    state.draggingSignalId = state.potentialDragTarget.id;
-                    document.body.style.cursor = 'grabbing';
+                    if (state.potentialDragTarget.type === 'signal') {
+                        state.draggingSignalId = state.potentialDragTarget.id;
+                        document.body.style.cursor = 'ns-resize';
+                    } else if (state.potentialDragTarget.type === 'time') {
+                        state.draggingTimeId = state.potentialDragTarget.id;
+                        document.body.style.cursor = 'ew-resize';
+                    }
                     document.body.classList.add('noselect');
+                    render(); // Re-render once to apply dragging styles
                 }
             }
 
+            // --- Signal Dragging ---
             if (state.draggingSignalId) {
-                e.preventDefault(); // Prevent text selection while dragging
+                e.preventDefault();
                 const signalHeight = DENSITY_HEIGHTS[state.densityMode];
                 const rect = signalNamesContainer.getBoundingClientRect();
                 const y = e.clientY - rect.top - SIGNALS_START_Y;
@@ -1402,37 +1450,34 @@
                     state.signals.splice(newIndex, 0, draggedSignal);
                     render();
                 }
-            } else if (state.draggingTimeId) {
+            }
+            // --- Time Division Dragging ---
+            else if (state.draggingTimeId) {
+                e.preventDefault();
                 const division = state.timeDivisions.find(t => t.id === state.draggingTimeId);
                 if (division) {
                     const CTM = svg.getScreenCTM();
                     const newX = (e.clientX - CTM.e) / CTM.a;
                     const svgWidth = canvasContainer.clientWidth;
-                    // Constrain dragging within the visible SVG area with a margin
-                    division.x = Math.max(50, Math.min(newX, svgWidth - 50));
-                    
-                    // Re-sort divisions by position
+                    division.x = Math.max(WAVEFORM_START_X, Math.min(newX, svgWidth - 20));
                     state.timeDivisions.sort((a, b) => a.x - b.x);
-                    
                     render();
                 }
             }
         });
 
         window.addEventListener('mouseup', () => {
-            const wasDragging = !!state.draggingSignalId;
+            const wasDragging = !!state.draggingSignalId || !!state.draggingTimeId;
 
-            // Always clear dragging state
+            // Always clear all dragging states
             state.draggingSignalId = null;
+            state.draggingTimeId = null;
             state.potentialDragTarget = null;
             document.body.style.cursor = 'default';
             document.body.classList.remove('noselect');
 
-            state.draggingTimeId = null;
-
             if (wasDragging) {
-                // Rerender only if a drag was in progress to remove styles
-                render();
+                render(); // Final render to remove dragging styles
             }
         });
         
