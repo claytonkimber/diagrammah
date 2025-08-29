@@ -269,6 +269,8 @@
                 type: 'digital', // 'digital' or 'analog'
                 color: '#34d399', // emerald-400
                 lineStyle: 'solid', // 'solid', 'dashed', 'dotted', 'dash-dot'
+                min: null,
+                max: null,
                 nodes: [
                     { timeId: 't_0', value: '0' },
                     { timeId: 't_1', value: '1' },
@@ -429,14 +431,26 @@
                 // --- Pre-calculate min/max for analog signal scaling ---
                 let analogMin = 0, analogMax = 1;
                 if (signal.type === 'analog') {
-                    const values = signal.nodes.map(n => parseFloat(n.value)).filter(v => !isNaN(v));
-                    if (values.length > 0) {
-                        analogMin = Math.min(...values);
-                        analogMax = Math.max(...values);
-                        if (analogMin === analogMax) {
-                            // Handle case where all values are the same
+                    // Use user-defined min/max if available and valid
+                    if (typeof signal.min === 'number' && typeof signal.max === 'number') {
+                        analogMin = signal.min;
+                        analogMax = signal.max;
+                         if (analogMin === analogMax) {
+                            // Handle case where min and max are the same
                             analogMin -= 0.5;
                             analogMax += 0.5;
+                        }
+                    } else {
+                        // Otherwise, auto-scale based on node values
+                        const values = signal.nodes.map(n => parseFloat(n.value)).filter(v => !isNaN(v));
+                        if (values.length > 0) {
+                            analogMin = Math.min(...values);
+                            analogMax = Math.max(...values);
+                            if (analogMin === analogMax) {
+                                // Handle case where all values are the same
+                                analogMin -= 0.5;
+                                analogMax += 0.5;
+                            }
                         }
                     }
                 }
@@ -449,7 +463,10 @@
 
                 // Render Signal Name
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700 cursor-pointer';
+                const nameDivClass = state.densityMode === 'dense'
+                    ? 'flex items-center justify-between p-1 rounded-md hover:bg-gray-700 cursor-pointer'
+                    : 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700 cursor-pointer';
+                nameDiv.className = nameDivClass;
                 nameDiv.style.height = `${signalHeight}px`;
                 nameDiv.dataset.signalId = signal.id;
 
@@ -460,12 +477,30 @@
 
                 const typeSpan = document.createElement('span');
                 typeSpan.className = 'text-xs ml-2 flex-shrink-0';
-                typeSpan.style.color = C('#9ca3af', '#6b7280'); // gray-400 / gray-500
+                typeSpan.style.color = C('#9ca3af', '#6b7280');
                 typeSpan.textContent = signal.type;
 
                 const nameWrapper = document.createElement('div');
                 nameWrapper.className = 'flex-grow min-w-0';
                 nameWrapper.appendChild(nameSpan);
+
+                // Display Min/Max info
+                if (signal.type === 'digital' || (signal.type === 'analog' && (typeof signal.min === 'number' || typeof signal.max === 'number'))) {
+                    const minMaxSpan = document.createElement('div');
+                    minMaxSpan.className = 'text-xs truncate text-gray-500'; // No top margin needed in this structure
+
+                    let minText, maxText;
+                    if (signal.type === 'digital') {
+                        minText = `Min: ${signal.min !== null ? signal.min : 0}`;
+                        maxText = `Max: ${signal.max !== null ? signal.max : 1}`;
+                    } else { // Analog (only shown if min/max is set)
+                        minText = `Min: ${signal.min}`;
+                        maxText = `Max: ${signal.max}`;
+                    }
+
+                    minMaxSpan.textContent = `${minText} / ${maxText}`;
+                    nameWrapper.appendChild(minMaxSpan); // Append to wrapper
+                }
 
                 nameDiv.appendChild(nameWrapper);
                 nameDiv.appendChild(typeSpan);
@@ -770,6 +805,8 @@
                 type: 'digital',
                 color: `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`,
                 lineStyle: 'solid',
+                min: null,
+                max: null,
                 nodes: state.timeDivisions.map(t => ({timeId: t.id, value: '0'}))
             };
             state.signals.push(newSignal);
@@ -929,6 +966,22 @@
                 if (!signal) return;
                 contextMenu.appendChild(createMenuItem('Change Name', target.rename));
                 contextMenu.appendChild(createMenuItem(`Toggle Type (is ${signal.type})`, () => toggleSignalType(target.id)));
+
+                contextMenu.appendChild(createMenuSeparator());
+                const currentMin = signal.min !== null ? ` (current: ${signal.min})` : '';
+                const currentMax = signal.max !== null ? ` (current: ${signal.max})` : '';
+
+                const setMinItem = createMenuItem(`Set Min${currentMin}`, () => {
+                    const wrapper = createTextInput('Set Minimum Value', signal.id, 'min', signal.min || '0.0', updateSignalMinMax);
+                    contextMenu.replaceChildren(wrapper);
+                }, false, true);
+                const setMaxItem = createMenuItem(`Set Max${currentMax}`, () => {
+                    const wrapper = createTextInput('Set Maximum Value', signal.id, 'max', signal.max || '1.0', updateSignalMinMax);
+                    contextMenu.replaceChildren(wrapper);
+                }, false, true);
+                contextMenu.appendChild(setMinItem);
+                contextMenu.appendChild(setMaxItem);
+
                 contextMenu.appendChild(createMenuSeparator());
                 contextMenu.appendChild(createColorInput(target.id, signal.color));
                 contextMenu.appendChild(createSelectInput('Line Style', target.id, signal.lineStyle, ['solid', 'dashed', 'dotted', 'dash-dot'], changeSignalLineStyle));
@@ -975,12 +1028,18 @@
         }
 
         // Context menu item creation helpers
-        function createMenuItem(label, action, isDestructive = false) {
+        function createMenuItem(label, action, isDestructive = false, keepMenuOpen = false) {
             const item = document.createElement('div');
             item.className = 'context-menu-item';
             if (isDestructive) item.style.color = '#f87171'; // red-400
             item.textContent = label;
-            item.onclick = (e) => { e.stopPropagation(); action(); hideContextMenu(); };
+            item.onclick = (e) => {
+                e.stopPropagation();
+                action();
+                if (!keepMenuOpen) {
+                    hideContextMenu();
+                }
+            };
             return item;
         }
         function createMenuSeparator() {
@@ -1087,6 +1146,29 @@
                 render();
             }
         }
+
+        function updateSignalMinMax(signalId, key, value) {
+            const signal = state.signals.find(s => s.id === signalId);
+            if (!signal) return;
+
+            const numValue = parseFloat(value);
+            if (isNaN(numValue)) {
+                // If user enters invalid text, reset that value to null to trigger auto-scaling
+                signal[key] = null;
+                render();
+                return;
+            }
+
+            signal[key] = numValue;
+
+            // Ensure min is not greater than max
+            if (signal.min !== null && signal.max !== null && signal.min > signal.max) {
+                // Swap them if min is greater than max
+                [signal.min, signal.max] = [signal.max, signal.min];
+            }
+
+            render();
+        }
         function updateTimeLabel(timeId, _, value) { // signalId is unused but passed by creator
             const div = state.timeDivisions.find(t => t.id === timeId);
             if (div) {
@@ -1186,7 +1268,10 @@
             
             xml += '    <signals>\n';
             state.signals.forEach(s => {
-                xml += `        <signal id="${s.id}" name="${escapeXml(s.name)}" type="${s.type}" color="${s.color}" lineStyle="${s.lineStyle}">\n`;
+                let minMaxAttrs = '';
+                if (typeof s.min === 'number') minMaxAttrs += ` min="${s.min}"`;
+                if (typeof s.max === 'number') minMaxAttrs += ` max="${s.max}"`;
+                xml += `        <signal id="${s.id}" name="${escapeXml(s.name)}" type="${s.type}" color="${s.color}" lineStyle="${s.lineStyle}"${minMaxAttrs}>\n`;
                 xml += `            <nodes>\n`;
                 s.nodes.forEach(n => {
                     xml += `                <node timeId="${n.timeId}" value="${escapeXml(n.value)}" />\n`;
@@ -1230,6 +1315,8 @@
                     type: sigEl.getAttribute('type'),
                     color: sigEl.getAttribute('color'),
                     lineStyle: sigEl.getAttribute('lineStyle'),
+                    min: sigEl.hasAttribute('min') ? parseFloat(sigEl.getAttribute('min')) : null,
+                    max: sigEl.hasAttribute('max') ? parseFloat(sigEl.getAttribute('max')) : null,
                     nodes: []
                 };
                 const nodeElements = sigEl.querySelectorAll("node");
