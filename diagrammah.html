@@ -918,26 +918,92 @@
             render();
         });
 
-        function rescaleTime() {
-            const numericDivs = state.timeDivisions
-                .map(d => ({...d, val: parseFloat(d.label)}))
-                .filter(d => !isNaN(d.val))
-                .sort((a,b) => a.val - b.val);
+        function parseTime(label) {
+            if (typeof label !== 'string') return null;
+            const labelLower = label.trim().toLowerCase();
+            const units = {
+                's':  1000000000000, // 1e12
+                'ms': 1000000000,    // 1e9
+                'us': 1000000,       // 1e6
+                'ns': 1000,          // 1e3
+                'ps': 1
+            };
 
-            if (numericDivs.length < 2) return;
-            
-            const minTime = numericDivs[0].val;
-            const maxTime = numericDivs[numericDivs.length - 1].val;
-            const timeRange = maxTime - minTime;
-            const svgWidth = parseFloat(svg.getAttribute('width'));
-            const drawingArea = svgWidth - 150; // margins
-            
-            state.timeDivisions.forEach(div => {
-                const numVal = parseFloat(div.label);
-                if (!isNaN(numVal)) {
-                   div.x = 100 + ((numVal - minTime) / timeRange) * drawingArea;
+            // Sort units by length descending to match 'ms' before 's'
+            const sortedUnits = Object.keys(units).sort((a, b) => b.length - a.length);
+
+            for (const u of sortedUnits) {
+                if (labelLower.endsWith(u)) {
+                    const numericPart = parseFloat(labelLower.slice(0, labelLower.length - u.length));
+                    if (!isNaN(numericPart)) {
+                        return numericPart * units[u];
+                    }
                 }
-            });
+            }
+            
+            return null; // Return null if no recognized unit is found
+        }
+
+        function rescaleTime() {
+            const parsedDivs = state.timeDivisions.map(d => ({ ...d, timeVal: parseTime(d.label) }));
+            const hasTimeUnits = parsedDivs.some(d => d.timeVal !== null);
+
+            if (hasTimeUnits) {
+                // --- Time-unit scaling mode ---
+                const allAreTimes = parsedDivs.every(d => d.timeVal !== null);
+                if (!allAreTimes) {
+                    // Mixed abstract and time-unit labels found, disable scaling.
+                    state.isScaled = false;
+                    updateToolbar();
+                    return;
+                }
+
+                const sortedByTime = [...parsedDivs].sort((a, b) => a.timeVal - b.timeVal);
+                if (sortedByTime.length < 2) return;
+
+                const minTime = sortedByTime[0].timeVal;
+                const maxTime = sortedByTime[sortedByTime.length - 1].timeVal;
+                const timeRange = maxTime - minTime;
+
+                const svgWidth = parseFloat(svg.getAttribute('width'));
+                const drawingArea = svgWidth - 150; // margins
+
+                if (timeRange === 0) {
+                    // If all time values are identical, distribute them evenly.
+                    const divisionWidth = state.timeDivisions.length > 1 ? drawingArea / (state.timeDivisions.length - 1) : 0;
+                    state.timeDivisions.forEach((div, index) => {
+                        div.x = 100 + index * divisionWidth;
+                    });
+                } else {
+                    // Scale based on the parsed time value.
+                    state.timeDivisions.forEach(div => {
+                        const parsed = parsedDivs.find(p => p.id === div.id);
+                        div.x = 100 + ((parsed.timeVal - minTime) / timeRange) * drawingArea;
+                    });
+                }
+            } else {
+                // --- Abstract/numeric scaling mode (original behavior) ---
+                const numericDivs = state.timeDivisions
+                    .map(d => ({...d, val: parseFloat(d.label)}))
+                    .filter(d => !isNaN(d.val))
+                    .sort((a,b) => a.val - b.val);
+
+                if (numericDivs.length < 2) return;
+
+                const minTime = numericDivs[0].val;
+                const maxTime = numericDivs[numericDivs.length - 1].val;
+                const timeRange = maxTime - minTime;
+                const svgWidth = parseFloat(svg.getAttribute('width'));
+                const drawingArea = svgWidth - 150; // margins
+
+                state.timeDivisions.forEach(div => {
+                    const numVal = parseFloat(div.label);
+                    if (!isNaN(numVal)) {
+                       div.x = 100 + ((numVal - minTime) / timeRange) * drawingArea;
+                    }
+                });
+            }
+            // Finally, sort all divisions by their new x-position.
             state.timeDivisions.sort((a,b) => a.x - b.x);
         }
 
