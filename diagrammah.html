@@ -126,6 +126,14 @@
         .time-division-group:hover rect {
             fill: rgba(74, 222, 128, 0.3); /* green-400 with opacity */
         }
+        .noselect {
+            -webkit-touch-callout: none; /* iOS Safari */
+            -webkit-user-select: none;   /* Safari */
+            -khtml-user-select: none;    /* Konqueror HTML */
+            -moz-user-select: none;      /* Old versions of Firefox */
+            -ms-user-select: none;       /* Internet Explorer/Edge */
+            user-select: none;           /* Non-prefixed version */
+        }
     </style>
     <style id="print-styles">
         @media print {
@@ -282,6 +290,8 @@
             nextSignalId: 2,
             nextTimeId: 2,
             draggingTimeId: null,
+            draggingSignalId: null,
+            potentialDragTarget: null,
             contextTarget: null,
             isColorMode: true,
             diagramTitle: 'Untitled Diagram',
@@ -449,9 +459,23 @@
 
                 // Render Signal Name
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700 cursor-pointer';
+                nameDiv.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700';
                 nameDiv.style.height = `${signalHeight}px`;
+                nameDiv.style.cursor = 'grab';
                 nameDiv.dataset.signalId = signal.id;
+
+                if (state.draggingSignalId === signal.id) {
+                    nameDiv.style.opacity = '0.5';
+                }
+
+                nameDiv.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return; // Only drag with left mouse button
+                    state.potentialDragTarget = {
+                        id: signal.id,
+                        startX: e.clientX,
+                        startY: e.clientY
+                    };
+                });
 
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'font-semibold truncate';
@@ -1286,7 +1310,33 @@
         // --- DRAGGING LOGIC ---
         
         window.addEventListener('mousemove', (e) => {
-            if (state.draggingTimeId) {
+            if (state.potentialDragTarget && !state.draggingSignalId) {
+                const dx = e.clientX - state.potentialDragTarget.startX;
+                const dy = e.clientY - state.potentialDragTarget.startY;
+                if (Math.sqrt(dx * dx + dy * dy) > 5) { // Drag threshold
+                    state.draggingSignalId = state.potentialDragTarget.id;
+                    document.body.style.cursor = 'grabbing';
+                    document.body.classList.add('noselect');
+                }
+            }
+
+            if (state.draggingSignalId) {
+                e.preventDefault(); // Prevent text selection while dragging
+                const signalHeight = DENSITY_HEIGHTS[state.densityMode];
+                const rect = signalNamesContainer.getBoundingClientRect();
+                const y = e.clientY - rect.top - SIGNALS_START_Y;
+
+                let newIndex = Math.floor(y / signalHeight);
+                newIndex = Math.max(0, Math.min(state.signals.length - 1, newIndex));
+
+                const oldIndex = state.signals.findIndex(s => s.id === state.draggingSignalId);
+
+                if (oldIndex !== -1 && newIndex !== oldIndex) {
+                    const [draggedSignal] = state.signals.splice(oldIndex, 1);
+                    state.signals.splice(newIndex, 0, draggedSignal);
+                    render();
+                }
+            } else if (state.draggingTimeId) {
                 const division = state.timeDivisions.find(t => t.id === state.draggingTimeId);
                 if (division) {
                     const CTM = svg.getScreenCTM();
@@ -1304,7 +1354,20 @@
         });
 
         window.addEventListener('mouseup', () => {
+            const wasDragging = !!state.draggingSignalId;
+
+            // Always clear dragging state
+            state.draggingSignalId = null;
+            state.potentialDragTarget = null;
+            document.body.style.cursor = 'default';
+            document.body.classList.remove('noselect');
+
             state.draggingTimeId = null;
+
+            if (wasDragging) {
+                // Rerender only if a drag was in progress to remove styles
+                render();
+            }
         });
         
         // --- UTILITY FUNCTIONS ---
