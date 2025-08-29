@@ -126,6 +126,14 @@
         .time-division-group:hover rect {
             fill: rgba(74, 222, 128, 0.3); /* green-400 with opacity */
         }
+        .noselect {
+            -webkit-touch-callout: none; /* iOS Safari */
+            -webkit-user-select: none;   /* Safari */
+            -khtml-user-select: none;    /* Konqueror HTML */
+            -moz-user-select: none;      /* Old versions of Firefox */
+            -ms-user-select: none;       /* Internet Explorer/Edge */
+            user-select: none;           /* Non-prefixed version */
+        }
     </style>
     <style id="print-styles">
         @media print {
@@ -283,6 +291,7 @@
             nextTimeId: 2,
             draggingTimeId: null,
             draggingSignalId: null,
+            potentialDragTarget: null,
             contextTarget: null,
             isColorMode: true,
             diagramTitle: 'Untitled Diagram',
@@ -461,9 +470,11 @@
 
                 nameDiv.addEventListener('mousedown', (e) => {
                     if (e.button !== 0) return; // Only drag with left mouse button
-                    e.preventDefault(); // Prevent text selection
-                    state.draggingSignalId = signal.id;
-                    document.body.style.cursor = 'grabbing';
+                    state.potentialDragTarget = {
+                        id: signal.id,
+                        startX: e.clientX,
+                        startY: e.clientY
+                    };
                 });
 
                 const nameSpan = document.createElement('span');
@@ -1299,7 +1310,18 @@
         // --- DRAGGING LOGIC ---
         
         window.addEventListener('mousemove', (e) => {
+            if (state.potentialDragTarget && !state.draggingSignalId) {
+                const dx = e.clientX - state.potentialDragTarget.startX;
+                const dy = e.clientY - state.potentialDragTarget.startY;
+                if (Math.sqrt(dx * dx + dy * dy) > 5) { // Drag threshold
+                    state.draggingSignalId = state.potentialDragTarget.id;
+                    document.body.style.cursor = 'grabbing';
+                    document.body.classList.add('noselect');
+                }
+            }
+
             if (state.draggingSignalId) {
+                e.preventDefault(); // Prevent text selection while dragging
                 const signalHeight = DENSITY_HEIGHTS[state.densityMode];
                 const rect = signalNamesContainer.getBoundingClientRect();
                 const y = e.clientY - rect.top - SIGNALS_START_Y;
@@ -1332,12 +1354,20 @@
         });
 
         window.addEventListener('mouseup', () => {
-            if (state.draggingSignalId) {
-                state.draggingSignalId = null;
-                document.body.style.cursor = 'default';
+            const wasDragging = !!state.draggingSignalId;
+
+            // Always clear dragging state
+            state.draggingSignalId = null;
+            state.potentialDragTarget = null;
+            document.body.style.cursor = 'default';
+            document.body.classList.remove('noselect');
+
+            state.draggingTimeId = null;
+
+            if (wasDragging) {
+                // Rerender only if a drag was in progress to remove styles
                 render();
             }
-            state.draggingTimeId = null;
         });
         
         // --- UTILITY FUNCTIONS ---
