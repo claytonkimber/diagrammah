@@ -1059,19 +1059,21 @@
                 const timeRange = maxTime - minTime;
 
                 const svgWidth = parseFloat(svg.getAttribute('width'));
-                const drawingArea = svgWidth - WAVEFORM_START_X - 20; // margins
+                const PADDING = 30;
+                const startX = WAVEFORM_START_X + PADDING;
+                const drawingArea = svgWidth - WAVEFORM_START_X - 20 - (2 * PADDING);
 
                 if (timeRange === 0) {
-                    // If all time values are identical, distribute them evenly.
+                    // If all time values are identical, distribute them evenly across the padded area.
                     const divisionWidth = state.timeDivisions.length > 1 ? drawingArea / (state.timeDivisions.length - 1) : 0;
                     state.timeDivisions.forEach((div, index) => {
-                        div.x = WAVEFORM_START_X + index * divisionWidth;
+                        div.x = startX + index * divisionWidth;
                     });
                 } else {
                     // Scale based on the parsed time value.
                     state.timeDivisions.forEach(div => {
                         const parsed = parsedDivs.find(p => p.id === div.id);
-                        div.x = WAVEFORM_START_X + ((parsed.timeVal - minTime) / timeRange) * drawingArea;
+                        div.x = startX + ((parsed.timeVal - minTime) / timeRange) * drawingArea;
                     });
                 }
             } else {
@@ -1087,14 +1089,24 @@
                 const maxTime = numericDivs[numericDivs.length - 1].val;
                 const timeRange = maxTime - minTime;
                 const svgWidth = parseFloat(svg.getAttribute('width'));
-                const drawingArea = svgWidth - WAVEFORM_START_X - 20; // margins
+                const PADDING = 30;
+                const startX = WAVEFORM_START_X + PADDING;
+                const drawingArea = svgWidth - WAVEFORM_START_X - 20 - (2 * PADDING);
 
-                state.timeDivisions.forEach(div => {
-                    const numVal = parseFloat(div.label);
-                    if (!isNaN(numVal)) {
-                       div.x = WAVEFORM_START_X + ((numVal - minTime) / timeRange) * drawingArea;
-                    }
-                });
+                if (timeRange === 0) {
+                    // If all time values are identical, distribute them evenly.
+                    const divisionWidth = state.timeDivisions.length > 1 ? drawingArea / (state.timeDivisions.length - 1) : 0;
+                    state.timeDivisions.forEach((div, index) => {
+                        div.x = startX + index * divisionWidth;
+                    });
+                } else {
+                    state.timeDivisions.forEach(div => {
+                        const numVal = parseFloat(div.label);
+                        if (!isNaN(numVal)) {
+                           div.x = startX + ((numVal - minTime) / timeRange) * drawingArea;
+                        }
+                    });
+                }
             }
             // Finally, sort all divisions by their new x-position.
             state.timeDivisions.sort((a,b) => a.x - b.x);
@@ -1554,7 +1566,10 @@
                     const CTM = svg.getScreenCTM();
                     const newX = (e.clientX - CTM.e) / CTM.a;
                     const svgWidth = canvasContainer.clientWidth;
-                    division.x = Math.max(WAVEFORM_START_X, Math.min(newX, svgWidth - 20));
+                    const PADDING = 30;
+                    const minX = WAVEFORM_START_X + PADDING;
+                    const maxX = svgWidth - 20 - PADDING;
+                    division.x = Math.max(minX, Math.min(newX, maxX));
                     state.timeDivisions.sort((a, b) => a.x - b.x);
                     render();
                 }
