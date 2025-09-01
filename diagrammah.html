@@ -290,6 +290,8 @@
                 type: 'digital', // 'digital' or 'analog'
                 color: '#34d399', // emerald-400
                 lineStyle: 'solid', // 'solid', 'dashed', 'dotted', 'dash-dot'
+                min: null,
+                max: null,
                 nodes: [
                     { timeId: 't_0', value: '0' },
                     { timeId: 't_1', value: '1' },
@@ -461,15 +463,37 @@
                 // --- Pre-calculate min/max for analog signal scaling ---
                 let analogMin = 0, analogMax = 1;
                 if (signal.type === 'analog') {
-                    const values = signal.nodes.map(n => parseFloat(n.value)).filter(v => !isNaN(v));
-                    if (values.length > 0) {
-                        analogMin = Math.min(...values);
-                        analogMax = Math.max(...values);
-                        if (analogMin === analogMax) {
-                            // Handle case where all values are the same
-                            analogMin -= 0.5;
-                            analogMax += 0.5;
-                        }
+                    const userMin = signal.min != null && !isNaN(parseFloat(signal.min)) ? parseFloat(signal.min) : null;
+                    const userMax = signal.max != null && !isNaN(parseFloat(signal.max)) ? parseFloat(signal.max) : null;
+
+                    const dataValues = signal.nodes.map(n => parseFloat(n.value)).filter(v => !isNaN(v));
+
+                    // Determine the min and max based on user input and data
+                    if (userMin !== null) {
+                        analogMin = userMin;
+                    } else if (dataValues.length > 0) {
+                        analogMin = Math.min(...dataValues);
+                    }
+
+                    if (userMax !== null) {
+                        analogMax = userMax;
+                    } else if (dataValues.length > 0) {
+                        analogMax = Math.max(...dataValues);
+                    }
+
+                    // If user defined only one bound, the other is still based on data,
+                    // so we need to ensure min is not greater than max.
+                    if (analogMin > analogMax) {
+                        // If user set a min that's higher than the max from data, respect min and adjust max.
+                        if (userMin !== null) analogMax = analogMin + 1;
+                        // If user set a max that's lower than the min from data, respect max and adjust min.
+                        else if (userMax !== null) analogMin = analogMax - 1;
+                    }
+
+                    // Final check to prevent min === max, which breaks scaling
+                    if (analogMin === analogMax) {
+                        analogMin -= 0.5;
+                        analogMax += 0.5;
                     }
                 }
 
@@ -481,7 +505,11 @@
 
                 // Render Signal Name
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'flex items-center justify-between p-2 rounded-md';
+                // Adjust styling for dense mode to prevent clipping
+                const justification = state.densityMode === 'dense' ? 'justify-start' : 'justify-center';
+                const paddingClass = state.densityMode === 'dense' ? 'p-1' : 'p-2';
+                // Use flex-col to allow for stacking the min/max labels below the name
+                nameDiv.className = `flex flex-col ${justification} ${paddingClass} rounded-md`;
                 nameDiv.style.height = `${signalHeight}px`;
                 nameDiv.dataset.signalId = signal.id;
 
@@ -490,8 +518,14 @@
                     nameDiv.style.opacity = '0.5';
                 }
 
+                // Container for the main signal name and type
+                const topRow = document.createElement('div');
+                topRow.className = 'flex items-center justify-between w-full';
+
                 const nameSpan = document.createElement('span');
-                nameSpan.className = 'font-semibold truncate';
+                const nameSizeClass = state.densityMode === 'dense' ? 'text-sm' : '';
+                const nameLeadingClass = state.densityMode === 'dense' ? 'leading-tight' : '';
+                nameSpan.className = `font-semibold truncate ${nameSizeClass} ${nameLeadingClass}`;
                 nameSpan.style.color = getSignalColor(signal);
                 nameSpan.textContent = signal.name;
 
@@ -501,11 +535,30 @@
                 typeSpan.textContent = signal.type;
 
                 const nameWrapper = document.createElement('div');
-                nameWrapper.className = 'flex-grow min-w-0';
+                nameWrapper.className = 'flex-grow min-w-0'; // Needed for truncate to work
                 nameWrapper.appendChild(nameSpan);
 
-                nameDiv.appendChild(nameWrapper);
-                nameDiv.appendChild(typeSpan);
+                topRow.appendChild(nameWrapper);
+                topRow.appendChild(typeSpan);
+                nameDiv.appendChild(topRow);
+
+                // Add Min/Max labels if they exist
+                if (signal.min != null || signal.max != null) {
+                    const minMaxLabel = document.createElement('div');
+                    // In dense mode, remove top margin and tighten line-height to save space
+                    const marginClass = state.densityMode === 'dense' ? '' : 'mt-1';
+                    const labelLeadingClass = state.densityMode === 'dense' ? 'leading-tight' : '';
+                    minMaxLabel.className = `text-xs ${marginClass} ${labelLeadingClass} truncate`;
+                    minMaxLabel.style.color = getSignalColor(signal);
+
+                    let labelParts = [];
+                    if (signal.min != null) labelParts.push(`min: ${signal.min}`);
+                    if (signal.max != null) labelParts.push(`max: ${signal.max}`);
+                    minMaxLabel.textContent = labelParts.join(', ');
+
+                    nameDiv.appendChild(minMaxLabel);
+                }
+
 
                 const activateRename = () => {
                     // Hide context menu if it's open
@@ -1060,6 +1113,32 @@
                 contextMenu.appendChild(createMenuItem('Change Name', target.rename));
                 contextMenu.appendChild(createMenuItem(`Toggle Type (is ${signal.type})`, () => toggleSignalType(target.id)));
                 contextMenu.appendChild(createMenuSeparator());
+
+                // Custom menu items for setting Min/Max to avoid auto-hiding
+                const setMinItem = document.createElement('div');
+                setMinItem.className = 'context-menu-item';
+                setMinItem.textContent = 'Set Min Value';
+                setMinItem.onclick = (e) => {
+                    e.stopPropagation();
+                    const wrapper = createTextInput('Enter Min', signal.id, 'min', signal.min || '', updateSignalMinMax);
+                    contextMenu.innerHTML = '';
+                    contextMenu.appendChild(wrapper);
+                };
+
+                const setMaxItem = document.createElement('div');
+                setMaxItem.className = 'context-menu-item';
+                setMaxItem.textContent = 'Set Max Value';
+                setMaxItem.onclick = (e) => {
+                    e.stopPropagation();
+                    const wrapper = createTextInput('Enter Max', signal.id, 'max', signal.max || '', updateSignalMinMax);
+                    contextMenu.innerHTML = '';
+                    contextMenu.appendChild(wrapper);
+                };
+
+                contextMenu.appendChild(setMinItem);
+                contextMenu.appendChild(setMaxItem);
+                contextMenu.appendChild(createMenuSeparator());
+
                 contextMenu.appendChild(createColorInput(target.id, signal.color));
                 contextMenu.appendChild(createSelectInput('Line Style', target.id, signal.lineStyle, ['solid', 'dashed', 'dotted', 'dash-dot'], changeSignalLineStyle));
                 contextMenu.appendChild(createMenuSeparator());
@@ -1217,6 +1296,18 @@
                 render();
             }
         }
+        function updateSignalMinMax(signalId, property, value) {
+            const signal = state.signals.find(s => s.id === signalId);
+            if (signal) {
+                // Allow clearing the value by entering an empty string or non-numeric input
+                if (value === '' || isNaN(parseFloat(value))) {
+                    signal[property] = null;
+                } else {
+                    signal[property] = value;
+                }
+                render();
+            }
+        }
         function updateTimeLabel(timeId, _, value) { // signalId is unused but passed by creator
             const div = state.timeDivisions.find(t => t.id === timeId);
             if (div) {
@@ -1316,7 +1407,9 @@
             
             xml += '    <signals>\n';
             state.signals.forEach(s => {
-                xml += `        <signal id="${s.id}" name="${escapeXml(s.name)}" type="${s.type}" color="${s.color}" lineStyle="${s.lineStyle}">\n`;
+                const minAttr = s.min != null ? ` min="${escapeXml(String(s.min))}"` : '';
+                const maxAttr = s.max != null ? ` max="${escapeXml(String(s.max))}"` : '';
+                xml += `        <signal id="${s.id}" name="${escapeXml(s.name)}" type="${s.type}" color="${s.color}" lineStyle="${s.lineStyle}"${minAttr}${maxAttr}>\n`;
                 xml += `            <nodes>\n`;
                 s.nodes.forEach(n => {
                     xml += `                <node timeId="${n.timeId}" value="${escapeXml(n.value)}" />\n`;
@@ -1360,6 +1453,8 @@
                     type: sigEl.getAttribute('type'),
                     color: sigEl.getAttribute('color'),
                     lineStyle: sigEl.getAttribute('lineStyle'),
+                    min: sigEl.getAttribute('min'), // Returns null if not present
+                    max: sigEl.getAttribute('max'), // Returns null if not present
                     nodes: []
                 };
                 const nodeElements = sigEl.querySelectorAll("node");
