@@ -286,7 +286,7 @@
         const SIGNAL_AXIS_X = 10;
         const SIGNAL_BAR_WIDTH = 30; // User request: make this same size as time bar
         const WAVEFORM_START_X = SIGNAL_AXIS_X + SIGNAL_BAR_WIDTH;
-        const SIGNALS_START_Y = TIME_AXIS_Y + TIME_BAR_HEIGHT;
+        const SIGNALS_START_Y = TIME_AXIS_Y + 30; // Adjusted for new text position
 
         // --- APPLICATION STATE ---
         let state = {
@@ -399,7 +399,7 @@
             // Interactive Time Division Bar background
             const timeBarBg = createSvgElement('rect', {
                 x: WAVEFORM_START_X,
-                y: TIME_AXIS_Y,
+                y: 0, // Drag bar is at the top now
                 width: svg.getAttribute('width') - WAVEFORM_START_X - 20,
                 height: TIME_BAR_HEIGHT,
                 fill: C('rgba(75, 85, 99, 0.2)', 'rgba(209, 213, 219, 0.3)')
@@ -412,7 +412,7 @@
 
             state.timeDivisions.forEach((div, index) => {
                 const line = createSvgElement('line', {
-                    x1: div.x, y1: TIME_AXIS_Y, x2: div.x, y2: svg.getAttribute('height'),
+                    x1: div.x, y1: SIGNALS_START_Y, x2: div.x, y2: svg.getAttribute('height'),
                     stroke: C('#4b5563'), 'stroke-width': 1, 'stroke-dasharray': '4 4'
                 });
                 
@@ -422,12 +422,12 @@
                 });
                 
                 const handle = createSvgElement('rect', {
-                   x: div.x - 30, y: TIME_AXIS_Y, width: 60, height: TIME_BAR_HEIGHT,
+                   x: div.x - 30, y: 0, width: 60, height: TIME_BAR_HEIGHT, // Drag bar at top
                    fill: 'transparent'
                 });
 
                 const text = createSvgElement('text', {
-                    x: div.x, y: TIME_AXIS_Y - 10, fill: C('#d1d5db'), 'font-size': '12px', 'text-anchor': 'middle', 'pointer-events': 'none'
+                    x: div.x, y: TIME_AXIS_Y + 15, fill: C('#d1d5db'), 'font-size': '12px', 'text-anchor': 'middle', 'pointer-events': 'none'
                 });
                 text.textContent = div.label;
                 
@@ -1315,11 +1315,12 @@
             hideContextMenu();
             groupElement.style.visibility = 'hidden';
 
-            const bbox = groupElement.getBBox();
+            const textElement = groupElement.querySelector('text');
+            const bbox = textElement.getBBox();
             const foreignObject = createSvgElement('foreignObject', {
                 x: bbox.x,
                 y: bbox.y,
-                width: bbox.width,
+                width: bbox.width || 60,
                 height: bbox.height + 5
             });
 
