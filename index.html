@@ -286,7 +286,7 @@
         const SIGNAL_AXIS_X = 10;
         const SIGNAL_BAR_WIDTH = 30; // User request: make this same size as time bar
         const WAVEFORM_START_X = SIGNAL_AXIS_X + SIGNAL_BAR_WIDTH;
-        const SIGNALS_START_Y = TIME_AXIS_Y + 20; // Adjusted for new text position
+        const SIGNALS_START_Y = TIME_AXIS_Y + 30; // Adjusted for new text position
 
         // --- APPLICATION STATE ---
         let state = {
@@ -412,7 +412,7 @@
 
             state.timeDivisions.forEach((div, index) => {
                 const line = createSvgElement('line', {
-                    x1: div.x, y1: TIME_AXIS_Y, x2: div.x, y2: svg.getAttribute('height'),
+                    x1: div.x, y1: SIGNALS_START_Y, x2: div.x, y2: svg.getAttribute('height'),
                     stroke: C('#4b5563'), 'stroke-width': 1, 'stroke-dasharray': '4 4'
                 });
                 
