@@ -640,8 +640,7 @@
                 hitboxRect.addEventListener('mousemove', (e) => {
                     if (highlightLine) {
                         const mouseX = e.offsetX;
-                        const { closestTimeId } = findClosestTimeDivision(mouseX);
-                        const closestDiv = state.timeDivisions.find(t => t.id === closestTimeId);
+                        const { closestDiv } = findClosestTimeDivision(mouseX);
                         if (closestDiv) {
                             highlightLine.setAttribute('x1', closestDiv.x);
                             highlightLine.setAttribute('x2', closestDiv.x);
@@ -1327,7 +1326,7 @@
             const uniqueInputId = `time-input-${div.id}`;
             const foreignHtml = `
                 <body xmlns="http://www.w3.org/1999/xhtml">
-                    <input type="text" id="${uniqueInputId}" value="${div.label}" 
+                    <input type="text" id="${uniqueInputId}" value="${escapeXml(div.label)}"
                            style="width: 100%; height: 100%; padding: 1px; border: 1px solid #6b7280; border-radius: 2px; background-color: #1f2937; color: white; font-family: Inter, sans-serif; font-size: 12px; text-align: center;" />
                 </body>`;
             foreignObject.innerHTML = foreignHtml;
@@ -1471,7 +1470,8 @@
         }
 
         function escapeXml(str) {
-            return str.replace(/[<>&'"]/g, function (c) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[<>&'"]/g, function (c) {
                 switch (c) {
                     case '<': return '&lt;';
                     case '>': return '&gt;';
@@ -1563,7 +1563,7 @@
         }
 
         function findClosestTimeDivision(x) {
-            if (state.timeDivisions.length === 0) return { closestTimeId: null, prevTimeId: null };
+            if (state.timeDivisions.length === 0) return { closestTimeId: null, prevTimeId: null, closestDiv: null };
             const sorted = [...state.timeDivisions].sort((a,b) => a.x - b.x);
             let closest = sorted[0];
             let minDiff = Math.abs(x - closest.x);
@@ -1578,7 +1578,7 @@
             const prevDivs = sorted.filter(t => t.x < x);
             const prev = prevDivs.length > 0 ? prevDivs[prevDivs.length - 1] : null;
 
-            return { closestTimeId: closest.id, prevTimeId: prev ? prev.id : null };
+            return { closestTimeId: closest.id, prevTimeId: prev ? prev.id : null, closestDiv: closest };
         }
 
         // --- DROPDOWN LOGIC ---
