@@ -1470,7 +1470,8 @@
         }
 
         function escapeXml(str) {
-            return str.replace(/[<>&'"]/g, function (c) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[<>&'"]/g, function (c) {
                 switch (c) {
                     case '<': return '&lt;';
                     case '>': return '&gt;';
