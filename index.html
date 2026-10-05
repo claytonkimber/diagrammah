@@ -640,8 +640,7 @@
                 hitboxRect.addEventListener('mousemove', (e) => {
                     if (highlightLine) {
                         const mouseX = e.offsetX;
-                        const { closestTimeId } = findClosestTimeDivision(mouseX);
-                        const closestDiv = state.timeDivisions.find(t => t.id === closestTimeId);
+                        const { closestDiv } = findClosestTimeDivision(mouseX);
                         if (closestDiv) {
                             highlightLine.setAttribute('x1', closestDiv.x);
                             highlightLine.setAttribute('x2', closestDiv.x);
@@ -1563,7 +1562,7 @@
         }
 
         function findClosestTimeDivision(x) {
-            if (state.timeDivisions.length === 0) return { closestTimeId: null, prevTimeId: null };
+            if (state.timeDivisions.length === 0) return { closestTimeId: null, prevTimeId: null, closestDiv: null };
             const sorted = [...state.timeDivisions].sort((a,b) => a.x - b.x);
             let closest = sorted[0];
             let minDiff = Math.abs(x - closest.x);
@@ -1578,7 +1577,7 @@
             const prevDivs = sorted.filter(t => t.x < x);
             const prev = prevDivs.length > 0 ? prevDivs[prevDivs.length - 1] : null;
 
-            return { closestTimeId: closest.id, prevTimeId: prev ? prev.id : null };
+            return { closestTimeId: closest.id, prevTimeId: prev ? prev.id : null, closestDiv: closest };
         }
 
         // --- DROPDOWN LOGIC ---
