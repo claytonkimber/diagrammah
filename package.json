@@ -1,0 +1,8 @@
+{
+  "name": "timing-diagram-creator",
+  "version": "1.0.0",
+  "description": "Timing Diagram Creator",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}
