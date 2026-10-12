@@ -461,6 +461,9 @@
             let currentY = SIGNALS_START_Y;
             const totalSvgWidth = parseFloat(svg.getAttribute('width'));
 
+            const timeMap = new Map();
+            state.timeDivisions.forEach(t => timeMap.set(t.id, t));
+
             state.signals.forEach((signal, index) => {
                 const signalHeight = getSignalHeight(signal);
                 const y_base = currentY + signalHeight; // This is the bottom of the lane
@@ -505,7 +508,7 @@
 
                 // Pre-sort nodes once for this signal to use for both path and labels
                 const sortedNodes = signal.nodes
-                    .map(node => ({ ...node, time: state.timeDivisions.find(t => t.id === node.timeId) }))
+                    .map(node => ({ ...node, time: timeMap.get(node.timeId) }))
                     .filter(node => node.time)
                     .sort((a, b) => a.time.x - b.time.x);
 
@@ -854,8 +857,11 @@
         }
 
         function getNodeValue(signal, timeId) {
+            const timeMap = new Map();
+            state.timeDivisions.forEach(t => timeMap.set(t.id, t));
+
              const sortedNodes = signal.nodes
-                .map(node => ({ ...node, time: state.timeDivisions.find(t => t.id === node.timeId) }))
+                .map(node => ({ ...node, time: timeMap.get(node.timeId) }))
                 .filter(node => node.time)
                 .sort((a, b) => a.time.x - b.time.x);
             
@@ -868,11 +874,14 @@
         }
 
         function getPreviousNodeValue(signal, timeId) {
-            const timeDiv = state.timeDivisions.find(t => t.id === timeId);
+            const timeMap = new Map();
+            state.timeDivisions.forEach(t => timeMap.set(t.id, t));
+
+            const timeDiv = timeMap.get(timeId);
             if (!timeDiv) return '0';
             
             const sortedNodes = signal.nodes
-                .map(node => ({...node, x: state.timeDivisions.find(t=>t.id === node.timeId)?.x}))
+                .map(node => ({...node, x: timeMap.get(node.timeId)?.x}))
                 .filter(node => node.x < timeDiv.x)
                 .sort((a, b) => b.x - a.x);
             
