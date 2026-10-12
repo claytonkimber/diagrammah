@@ -905,6 +905,7 @@
             const newLabel = `${parseFloat(lastTime.label) + 100}ns`;
             
             state.timeDivisions.push({id: newTimeId, label: newLabel, x: newX});
+            state.timeDivisions.sort((a,b) => a.x - b.x); // Ensure globally sorted
             
             // Add a default node for this time to all signals
             state.signals.forEach(sig => {
@@ -1457,6 +1458,7 @@
             state.densityMode = newState.densityMode;
             state.signals = newState.signals;
             state.timeDivisions = newState.timeDivisions;
+            state.timeDivisions.sort((a,b) => a.x - b.x); // Ensure globally sorted after import
 
             // Recalculate next IDs to avoid conflicts
             const maxSignalId = Math.max(0, ...state.signals.map(s => parseInt(s.id.split('_')[1])));
@@ -1564,21 +1566,51 @@
 
         function findClosestTimeDivision(x) {
             if (state.timeDivisions.length === 0) return { closestTimeId: null, prevTimeId: null, closestDiv: null };
-            const sorted = [...state.timeDivisions].sort((a,b) => a.x - b.x);
-            let closest = sorted[0];
-            let minDiff = Math.abs(x - closest.x);
-            for (let i = 1; i < sorted.length; i++) {
-                let diff = Math.abs(x - sorted[i].x);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    closest = sorted[i];
+
+            const divs = state.timeDivisions; // Guaranteed sorted by x globally
+
+            let low = 0;
+            let high = divs.length - 1;
+
+            if (x <= divs[0].x) {
+                return { closestTimeId: divs[0].id, prevTimeId: null, closestDiv: divs[0] };
+            }
+            if (x > divs[high].x) {
+                return {
+                    closestTimeId: divs[high].id,
+                    prevTimeId: divs[high].id,
+                    closestDiv: divs[high]
+                };
+            }
+
+            // Binary search for closest
+            while (low <= high) {
+                let mid = Math.floor((low + high) / 2);
+                if (divs[mid].x < x) {
+                    low = mid + 1;
+                } else if (divs[mid].x > x) {
+                    high = mid - 1;
+                } else {
+                    return {
+                        closestTimeId: divs[mid].id,
+                        prevTimeId: mid > 0 ? divs[mid - 1].id : null,
+                        closestDiv: divs[mid]
+                    };
                 }
             }
             
-            const prevDivs = sorted.filter(t => t.x < x);
-            const prev = prevDivs.length > 0 ? prevDivs[prevDivs.length - 1] : null;
+            const prev = high >= 0 ? divs[high] : null;
 
-            return { closestTimeId: closest.id, prevTimeId: prev ? prev.id : null, closestDiv: closest };
+            let closest = divs[low];
+            if (high >= 0 && (x - divs[high].x) <= (divs[low].x - x)) {
+                closest = divs[high];
+            }
+
+            return {
+                closestTimeId: closest.id,
+                prevTimeId: prev ? prev.id : null,
+                closestDiv: closest
+            };
         }
 
         // --- DROPDOWN LOGIC ---
