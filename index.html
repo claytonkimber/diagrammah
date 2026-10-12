@@ -871,8 +871,13 @@
             const timeDiv = state.timeDivisions.find(t => t.id === timeId);
             if (!timeDiv) return '0';
             
+            const timeMap = new Map();
+            for (const t of state.timeDivisions) {
+                timeMap.set(t.id, t.x);
+            }
+
             const sortedNodes = signal.nodes
-                .map(node => ({...node, x: state.timeDivisions.find(t=>t.id === node.timeId)?.x}))
+                .map(node => ({...node, x: timeMap.get(node.timeId)}))
                 .filter(node => node.x < timeDiv.x)
                 .sort((a, b) => b.x - a.x);
             
