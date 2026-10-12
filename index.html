@@ -854,8 +854,13 @@
         }
 
         function getNodeValue(signal, timeId) {
-             const sortedNodes = signal.nodes
-                .map(node => ({ ...node, time: state.timeDivisions.find(t => t.id === node.timeId) }))
+            const timeLookup = state.timeDivisions.reduce((acc, t) => {
+                acc[t.id] = t;
+                return acc;
+            }, {});
+
+            const sortedNodes = signal.nodes
+                .map(node => ({ ...node, time: timeLookup[node.timeId] }))
                 .filter(node => node.time)
                 .sort((a, b) => a.time.x - b.time.x);
             
@@ -871,9 +876,14 @@
             const timeDiv = state.timeDivisions.find(t => t.id === timeId);
             if (!timeDiv) return '0';
             
+            const timeLookup = state.timeDivisions.reduce((acc, t) => {
+                acc[t.id] = t.x;
+                return acc;
+            }, {});
+
             const sortedNodes = signal.nodes
-                .map(node => ({...node, x: state.timeDivisions.find(t=>t.id === node.timeId)?.x}))
-                .filter(node => node.x < timeDiv.x)
+                .map(node => ({...node, x: timeLookup[node.timeId]}))
+                .filter(node => node.x !== undefined && node.x < timeDiv.x)
                 .sort((a, b) => b.x - a.x);
             
             return sortedNodes.length > 0 ? sortedNodes[0].value : '0';
