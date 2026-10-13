@@ -1031,8 +1031,12 @@
                     });
                 } else {
                     // Scale based on the parsed time value.
+                    const parsedMap = new Map();
+                    for (let i = 0; i < parsedDivs.length; i++) {
+                        parsedMap.set(parsedDivs[i].id, parsedDivs[i]);
+                    }
                     state.timeDivisions.forEach(div => {
-                        const parsed = parsedDivs.find(p => p.id === div.id);
+                        const parsed = parsedMap.get(div.id);
                         div.x = startX + ((parsed.timeVal - minTime) / timeRange) * drawingArea;
                     });
                 }
